@@ -1,2 +1,2 @@
-# synthetic_data
+# Synthetic Data Project
 Repository for the UHF synthetic data project
