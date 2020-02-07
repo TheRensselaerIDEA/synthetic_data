@@ -16,7 +16,7 @@ class Encode():
     def __init__(self):
         pass
 
-    def __read_data(file_name, dtype=None):
+    def __read_data(self, file_name, dtype=None):
         """read in the file"""
         data = None
         if file_name.endswith(".csv") and dtype is not None:
@@ -89,7 +89,7 @@ class Encode():
 
         return pd.concat([df_core, df[cols_ignored]], axis=1)
 
-    def __truncated_beta(alpha, beta, low, high):
+    def __truncated_beta(self, alpha, beta, low, high):
         """truncated beta distribution with params alpha and beta, and limits low and high"""
         nrm = stats.beta.cdf(high, alpha, beta) - stats.beta.cdf(low, alpha, beta)
 
@@ -100,7 +100,7 @@ class Encode():
             xr = stats.beta.ppf(yr, alpha, beta)
             yield xr[0]
 
-    def __binary(col, limits=None):
+    def __binary(self, col, limits=None):
         """convert a binary column to continuous"""
         if limits:
             # reconstruct the distributions
@@ -149,13 +149,13 @@ class Encode():
         return col.apply(lambda x: next(distributions[x])), limits
 
 
-    def __numeric(col, min_max=None):
+    def __numeric(self, col, min_max=None):
         """normalize a numeric column"""
         if min_max:
             return ((col - min_max[0]) / (min_max[1] - min_max[0])), None, None
         return ((col - min(col)) / (max(col) - min(col))), min(col), max(col)
 
-    def __categorical(col, limits=None):
+    def __categorical(self, col, limits=None):
         """convert a categorical column to continuous"""
         if limits:
             # reconstruct the distributions
@@ -202,7 +202,7 @@ class Encode():
         # sample from the distributions and return that value
         return col.apply(lambda x: distributions[x].rvs()), limits
 
-    def __ordinal(col, limits=None):
+    def __ordinal(self, col, limits=None):
         """convert a ordinal column to continuous"""
         if limits:
             # reconstruct the distributions
@@ -326,7 +326,7 @@ class Encode():
 
         return df, limits, min_max
 
-    def __save_files(df, prefix, limits=None, min_max=None, cols=False):
+    def __save_files(self, df, prefix, limits=None, min_max=None, cols=False):
         """save the sdv file and decoders"""
         df.to_csv(f"{prefix}_sdv.csv", index=False)
         if cols:
@@ -358,7 +358,7 @@ class Encode():
         df_converted, lims, mm = __encode(df_raw, beta=args.beta)
         __save_files(df_converted, args.data_file[:-4], lims, mm, True)
 
-    def __read_decoders(prefix, npy_file):
+    def __read_decoders(self, prefix, npy_file):
         """read the decoder files"""
         limits = json.load(open(f"{prefix}.limits"))
         try:
