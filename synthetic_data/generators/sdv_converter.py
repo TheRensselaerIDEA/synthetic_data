@@ -358,4 +358,54 @@ class Encode():
         df_converted, lims, mm = __encode(df_raw, beta=args.beta)
         __save_files(df_converted, args.data_file[:-4], lims, mm, True)
 
+    def __read_decoders(prefix, npy_file):
+        """read the decoder files"""
+        limits = json.load(open(f"{prefix}.limits"))
+        try:
+            min_max = json.load(open(f"{prefix}.min_max"))
+        except FileNotFoundError:
+            min_max = None
+        try:
+            cols = json.load(open(f"{prefix}.cols"))
+        except FileNotFoundError:
+            cols = None
+        if npy_file.endswith(".csv"):
+            npy = pd.read_csv(npy_file)
+        elif npy_file.endswith(".npy"):
+            npy = np.load(npy_file)
+        else:
+            npy = None
+
+        return limits, min_max, cols, npy
+
+    def encode_test(self, 
+                    data_file,
+                    encoder_file. 
+                    fix_ages=False, 
+                    age_col_name="AGE", 
+                    fix_na_values=False, 
+                    na_col_to_ignore=["SUBJECT_ID", "HADM_ID", "ADMITTIME", "DISCHTIME"], 
+                    dtype=None):
+        # open and read the data file
+        df_raw = __read_data(data_file, dtype)
+
+        if fix_ages:
+            # fix negative ages
+            df_raw = __fix_ages(df_raw, age_col_name)
+
+        if fix_na_values:
+            # fix the NA values
+            df_raw = __fix_na_values(df_raw, na_col_to_ignore)
+            assert df_raw.isna().sum().sum() == 0
+
+        enc_file = (
+            encoder_file[:-4]
+            if encoder_file.endswith(".csv")
+            else encoder_file
+        )
+
+        lims, mms, _, _ = __read_decoders(enc_file, "")
+        df_converted, _, _ = __encode(df_raw, lims, mms, beta=args.beta)
+        __save_files(df_converted, args.data_file[:-4])
+
 
