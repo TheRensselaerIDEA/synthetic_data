@@ -1,0 +1,5 @@
+# Exclude following files
+.DS_Store
+.ipynb_checkpoints/
+synthetic_data/.DS_Store
+synthetic_data/__pycache__/
