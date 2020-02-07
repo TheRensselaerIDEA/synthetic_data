@@ -385,7 +385,8 @@ class Encode():
                     age_col_name="AGE", 
                     fix_na_values=False, 
                     na_col_to_ignore=["SUBJECT_ID", "HADM_ID", "ADMITTIME", "DISCHTIME"], 
-                    dtype=None):
+                    dtype=None,
+                    beta=None):
         # open and read the data file
         df_raw = __read_data(data_file, dtype)
 
@@ -405,7 +406,7 @@ class Encode():
         )
 
         lims, mms, _, _ = __read_decoders(enc_file, "")
-        df_converted, _, _ = __encode(df_raw, lims, mms, beta=args.beta)
+        df_converted, _, _ = __encode(df_raw, lims, mms, beta)
         __save_files(df_converted, args.data_file[:-4])
 
 
