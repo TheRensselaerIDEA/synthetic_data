@@ -11,10 +11,10 @@ from scipy import stats
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
 
-class Encode():
+class Encoder():
 
     def __init__(self):
-        pass
+        print("Initialized Encoder")
 
     def __read_data(self, file_name, dtype=None):
         """read in the file"""
@@ -76,7 +76,7 @@ class Encode():
             cols_with_na = df_core.isna().sum()
             col = cols_with_na[cols_with_na > 0].idxmin()
             # impute that column
-            df_core.loc[df_core[col].isna(), col] = __impute_column(df_core, col)
+            df_core.loc[df_core[col].isna(), col] = self.__impute_column(df_core, col)
 
         return pd.concat([df_core, df[cols_ignored]], axis=1)
 
@@ -108,9 +108,9 @@ class Encode():
             alpha = (zeros) * 100
             beta = ((len(col) - (zeros * len(col))) / len(col)) * 100
 
-            distributions[0] = __truncated_beta(alpha, beta, 0, zeros)
+            distributions[0] = self.__truncated_beta(alpha, beta, 0, zeros)
 
-            distributions[1] = __truncated_beta(alpha, beta, zeros, 1)
+            distributions[1] = self.__truncated_beta(alpha, beta, zeros, 1)
 
             # convert values that don't exist in orig col to most common
             col = col.copy()  # to lose copy warnings
@@ -130,10 +130,10 @@ class Encode():
         distributions = {}
         limits = {}
 
-        distributions[0] = __truncated_beta(alpha, beta, 0, zeros)
+        distributions[0] = self.__truncated_beta(alpha, beta, 0, zeros)
         limits[zeros] = 0
 
-        distributions[1] = __truncated_beta(alpha, beta, zeros, 1)
+        distributions[1] = self.__truncated_beta(alpha, beta, zeros, 1)
         limits[1] = 1
 
         # sample from the distributions and return that value
@@ -267,9 +267,9 @@ class Encode():
             # if object
             if df[c].dtype.char == "O":
                 if already_exists:
-                    df[c], _ = __categorical(df[c], limits[c])
+                    df[c], _ = self.__categorical(df[c], limits[c])
                 else:
-                    df[c], lim = __categorical(df[c])
+                    df[c], lim = self.__categorical(df[c])
                     limits[c] = lim
             # if int
             elif df[c].dtype.char == "l" or df[c].dtype.char == "q":
@@ -277,42 +277,42 @@ class Encode():
                 if set(df[c].unique()).issubset(set((0, 1))):
                     if already_exists:
                         if beta:
-                            df[c], _ = __binary(df[c], limits[c])
+                            df[c], _ = self.__binary(df[c], limits[c])
                         else:
-                            df[c], _ = __categorical(df[c], limits[c])
+                            df[c], _ = self.__categorical(df[c], limits[c])
                     else:
                         if beta:
-                            df[c], lim = __binary(df[c])
+                            df[c], lim = self.__binary(df[c])
                         else:
-                            df[c], lim = __categorical(df[c])
+                            df[c], lim = self.__categorical(df[c])
                         limits[c] = lim
                 # else ordinal
                 else:
                     if already_exists:
-                        df[c], _ = __ordinal(df[c], limits[c])
+                        df[c], _ = self.__ordinal(df[c], limits[c])
                     else:
-                        df[c], lim = __ordinal(df[c])
+                        df[c], lim = self.__ordinal(df[c])
                         limits[c] = lim
             # if boolean
             elif df[c].dtype.char == "?":
                 if already_exists:
                     if beta:
-                        df[c], _ = __binary(df[c], limits[c])
+                        df[c], _ = self.__binary(df[c], limits[c])
                     else:
-                        df[c], _ = __categorical(df[c], limits[c])
+                        df[c], _ = self.__categorical(df[c], limits[c])
                 else:
                     if beta:
-                        df[c], lim = __binary(df[c])
+                        df[c], lim = self.__binary(df[c])
                     else:
-                        df[c], lim = __categorical(df[c])
+                        df[c], lim = self.__categorical(df[c])
                     limits[c] = lim
 
             # if decimal
             elif df[c].dtype.char == "d":
                 if already_exists:
-                    df[c], _, _ = __numeric(df[c], min_max[c])
+                    df[c], _, _ = self.__numeric(df[c], min_max[c])
                 else:
-                    df[c], min_res, max_res = __numeric(df[c])
+                    df[c], min_res, max_res = self.__numeric(df[c])
                     min_max[c] = (min_res, max_res, 0)
 
         return df, limits, min_max
@@ -331,17 +331,18 @@ class Encode():
                     data_file,
                     fix_na_values=False, 
                     na_col_to_ignore=[], 
-                    dtype=None):
+                    dtype=None,
+                    beta=None):
         # open and read the data file
-        df_raw = __read_data(data_file, dtype)
+        df_raw = self.__read_data(data_file, dtype)
 
         if fix_na_values:
             # fix the NA values
-            df_raw = __fix_na_values(df_raw, na_col_to_ignore)
+            df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
             assert df_raw.isna().sum().sum() == 0
 
-        df_converted, lims, mm = __encode(df_raw, beta=args.beta)
-        __save_files(df_converted, args.data_file[:-4], lims, mm, True)
+        df_converted, lims, mm = self.__encode(df_raw, beta)
+        self.__save_files(df_converted, args.data_file[:-4], lims, mm, True)
 
     def __read_decoders(self, prefix, npy_file):
         """read the decoder files"""
@@ -366,16 +367,16 @@ class Encode():
     def encode_test(self, 
                     data_file,
                     encoder_file,
-                    fix_na_values=False, 
+                    fix_na_values=False,
                     na_col_to_ignore=[], 
                     dtype=None,
                     beta=None):
         # open and read the data file
-        df_raw = __read_data(data_file, dtype)
+        df_raw = self.__read_data(data_file, dtype)
 
         if fix_na_values:
             # fix the NA values
-            df_raw = __fix_na_values(df_raw, na_col_to_ignore)
+            df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
             assert df_raw.isna().sum().sum() == 0
 
         enc_file = (
@@ -384,6 +385,88 @@ class Encode():
             else encoder_file
         )
 
-        lims, mms, _, _ = __read_decoders(enc_file, "")
-        df_converted, _, _ = __encode(df_raw, lims, mms, beta)
-        __save_files(df_converted, args.data_file[:-4])
+        lims, mms, _, _ = self.__read_decoders(enc_file, "")
+        df_converted, _, _ = self.__encode(df_raw, lims, mms, beta)
+        self.__save_files(df_converted, args.data_file[:-4])
+
+
+class Decoder():
+
+    def __init__(self):
+        print("Initialized Decoder")
+
+    def __read_decoders(self, prefix, npy_file):
+        """read the decoder files"""
+        limits = json.load(open(f"{prefix}.limits"))
+        try:
+            min_max = json.load(open(f"{prefix}.min_max"))
+        except FileNotFoundError:
+            min_max = None
+        try:
+            cols = json.load(open(f"{prefix}.cols"))
+        except FileNotFoundError:
+            cols = None
+        if npy_file.endswith(".csv"):
+            npy = pd.read_csv(npy_file)
+        elif npy_file.endswith(".npy"):
+            npy = np.load(npy_file)
+        else:
+            npy = None
+
+        return limits, min_max, cols, npy
+
+    def __read_data(self, file_name, dtype=None):
+        """read in the file"""
+        data = None
+        if file_name.endswith(".csv") and dtype is not None:
+            data = pd.read_csv(file_name, dtype = dtype)
+        elif file_name.endswith(".csv"):
+            data = pd.read_csv(file_name)
+        elif file_name.endswith(".npy"):
+            data = pd.DataFrame(np.load(file_name))
+
+        # check if file can be read
+        if data is None:
+            raise ValueError
+
+        return data
+
+    def __undo_categorical(self, col, lim):
+        """convert a categorical column to continuous"""
+
+        def cat_decode(x, limits):
+            """decoder for categorical data"""
+            for k, v in limits.items():
+                if x <= float(k):
+                    return v
+
+        return col.apply(lambda x: cat_decode(x, lim))
+
+
+    def __undo_numeric(self, col, min_col, max_col, discrete=None):
+        """normalize a numeric column"""
+        if discrete:
+            return (((max_col - min_col) * col) + min_col).round().astype("int")
+        return ((max_col - min_col) * col) + min_col
+
+    def __decode(self, df_new, df_orig_cols, limits, min_max):
+        """decode the data from SDV format"""
+        df_new = pd.DataFrame(df_new, columns=df_orig_cols)
+        for c in df_new.columns:
+            if c in limits:
+                df_new[c] = self.__undo_categorical(df_new[c], limits[c])
+            else:
+                df_new[c] = self.__undo_numeric(df_new[c], *min_max[c])
+
+        return df_new
+
+    def decode_file(self, data_file, npy_file):
+        lims, mm, cols, npy_new = self.__read_decoders(data_file[:-4], npy_file)
+        if not cols:
+            # open and read the data file
+            df_raw = self.__read_data(data_file)
+            cols = df_raw.columns
+
+        df_converted = self.__decode(np.clip(npy_new, 0, 1), cols, lims, mm)
+        # save decoded
+        df_converted.to_csv(args.data_file[:-4] + "_synthetic.csv", index=False)
