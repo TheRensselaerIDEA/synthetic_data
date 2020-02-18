@@ -19,9 +19,9 @@ class Encoder():
     The class provides functions to convert a Comma Separated 
     Values (CSV) file or Numpy (NPY) file into SDV file as 
     described below:
-    - The converted file
-    - Limits
-    - MM 
+    - SDV file
+    - Limits file
+    - Min_max file
     """
     def __init__(self):
         pass
@@ -372,11 +372,11 @@ class Encoder():
         Outputs
         -------
         SDV file:
-            The converted sdv file of the original training file provided.
-        Limits:
-            The limits file.
-        MM:
-            The MM file.
+            The converted sdv file of the original training file provided with original name appended with "_sdv".
+        Limits file:
+            The limits file with the name same as original file but with extension as "limits".
+        Min-max file:
+            The min-max file with the name same as original file but with extension as "min_max".
         """
 
         # open and read the data file
@@ -417,6 +417,30 @@ class Encoder():
                     na_col_to_ignore=[], 
                     dtype=None,
                     beta=None):
+        """ 
+        The function encodes the test file into SDV file. 
+  
+        Parameters
+        ----------
+        data_file : str, required
+            The test file as CSV or NPY which needs to be converted.
+        encoder_file : str, required
+            The file that should be used for encoding this file.
+        fix_na_values: boolean, optional
+            Boolean variable which imputes the rows that have NA values in them (default is False.
+        na_col_to_ignore: list, optional
+            If the parameter "fix_na_values" is set to True, this list of columns will be ignored from imputation (default is empty list).
+        dtype: dictionary, optional
+            If you want to specify which column should be treated as continuous and which one as numeric, you can use Pandas' dtype dictioary for each column (default is None).
+        beta: boolean, optional
+            Use binary imputation rather than categorical for categorical columns (default is False).
+          
+        Outputs
+        -------
+        SDV file:
+            The converted sdv file of the original test file provided with original name appended with "_sdv".
+        """
+
         # open and read the data file
         df_raw = self.__read_data(data_file, dtype)
 
@@ -437,9 +461,14 @@ class Encoder():
 
 
 class Decoder():
+    """ 
+    Decode files.
 
+    The class provides functions to decode a data file and 
+    produce the final synthetic data file.
+    """
     def __init__(self):
-        print("Initialized Decoder")
+        pass
 
     def __read_decoders(self, prefix, npy_file):
         """read the decoder files"""
@@ -506,7 +535,25 @@ class Decoder():
 
         return df_new
 
-    def decode_file(self, data_file, npy_file):
+    def decode_file(self, 
+                    data_file, 
+                    npy_file):
+        """ 
+        The function decodes the file into sythentic usable data file. 
+  
+        Parameters
+        ----------
+        data_file : str, required
+            The file as CSV which needs needs to be decoded.
+        npy_file : str, required
+            The file that includes all description for decoding.
+          
+        Outputs
+        -------
+        Sythetic data file:
+            The decoded synthetic file with the original file name appended with "_synthetic".
+        """
+
         lims, mm, cols, npy_new = self.__read_decoders(data_file[:-4], npy_file)
         if not cols:
             # open and read the data file
