@@ -1,5 +1,6 @@
 """
-Module converts file into/out of SDV format
+The module converts CSV/NPY files into SDV using
+the encoder and decoder classes.
 """
 
 import argparse
@@ -12,12 +13,25 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
 
 class Encoder():
+    """ 
+    Encode train/test files.
 
+    The class provides functions to convert a Comma Separated 
+    Values (CSV) file or Numpy (NPY) file into SDV file as 
+    described below:
+    - The converted file
+    - Limits
+    - MM 
+    """
     def __init__(self):
-        print("Initialized Encoder")
+        pass
 
     def __read_data(self, file_name, dtype=None):
-        """read in the file"""
+        """
+        Read in the file which can be CSV or Numpy
+        """
+
+        # Read in the file
         data = None
         if file_name.endswith(".csv") and dtype is not None:
             data = pd.read_csv(file_name, dtype = dtype)
@@ -26,14 +40,19 @@ class Encoder():
         elif file_name.endswith(".npy"):
             data = pd.DataFrame(np.load(file_name))
 
-        # check if file can be read
+        # Check if file can be read
         if data is None:
             raise ValueError
 
         return data
 
     def __impute_column(self, df, c):
-        """impute the column c in dataframe df"""
+        """
+        Impute a column (c in this case) in dataframe using 
+        LinearRegression if it is continuous or 
+        KNeighborsClassifier is it is not
+        """
+
         # get x and y
         y = df[c]
         x = df.drop(c, axis=1)
@@ -332,7 +351,34 @@ class Encoder():
                     fix_na_values=False, 
                     na_col_to_ignore=[], 
                     dtype=None,
-                    beta=None):
+                    beta=False):
+
+        """ 
+        The function encodes the training file into SDV file. 
+  
+        Parameters
+        ----------
+        data_file : str, required
+            The training file as CSV or NPY which needs to be converted.
+        fix_na_values: boolean, optional
+            Boolean variable which imputes the rows that have NA values in them (default is False.
+        na_col_to_ignore: list, optional
+            If the parameter "fix_na_values" is set to True, this list of columns will be ignored from imputation (default is empty list).
+        dtype: dictionary, optional
+            If you want to specify which column should be treated as continuous and which one as numeric, you can use Pandas' dtype dictioary for each column (default is None).
+        beta: boolean, optional
+            Use binary imputation rather than categorical for categorical columns (default is False).
+          
+        Outputs
+        -------
+        SDV file:
+            The converted sdv file of the original training file provided.
+        Limits:
+            The limits file.
+        MM:
+            The MM file.
+        """
+
         # open and read the data file
         df_raw = self.__read_data(data_file, dtype)
 
@@ -342,7 +388,7 @@ class Encoder():
             assert df_raw.isna().sum().sum() == 0
 
         df_converted, lims, mm = self.__encode(df_raw, beta)
-        self.__save_files(df_converted, args.data_file[:-4], lims, mm, True)
+        self.__save_files(df_converted, data_file[:-4], lims, mm, True)
 
     def __read_decoders(self, prefix, npy_file):
         """read the decoder files"""
@@ -387,7 +433,7 @@ class Encoder():
 
         lims, mms, _, _ = self.__read_decoders(enc_file, "")
         df_converted, _, _ = self.__encode(df_raw, lims, mms, beta)
-        self.__save_files(df_converted, args.data_file[:-4])
+        self.__save_files(df_converted, data_file[:-4])
 
 
 class Decoder():
@@ -469,4 +515,4 @@ class Decoder():
 
         df_converted = self.__decode(np.clip(npy_new, 0, 1), cols, lims, mm)
         # save decoded
-        df_converted.to_csv(args.data_file[:-4] + "_synthetic.csv", index=False)
+        df_converted.to_csv(data_file[:-4] + "_synthetic.csv", index=False)
