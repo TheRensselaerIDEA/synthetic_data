@@ -18,5 +18,12 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent"
     ],
+    install_requires=[
+    	"numpy",
+    	"pandas",
+    	"scipy",
+    	"scikit-learn",
+    	"tensorflow==1.3.0"
+    ],
     python_requires='>=3.6',
 )
