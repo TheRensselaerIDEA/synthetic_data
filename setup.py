@@ -23,7 +23,7 @@ setuptools.setup(
     	"pandas",
     	"scipy",
     	"scikit-learn",
-    	"tensorflow==1.3.0"
+    	"tensorflow==1.13.1"
     ],
     python_requires='>=3.6',
 )
