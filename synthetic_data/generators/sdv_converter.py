@@ -1,5 +1,5 @@
 """
-The module converts CSV/NPY files into SDV using
+The module converts CSV/NPY files into/from SDV using
 the encoder and decoder classes.
 """
 
@@ -22,6 +22,13 @@ class Encoder():
     - SDV file
     - Limits file
     - Min_max file
+
+    Available methods
+    -----------------
+        encode_train() : 
+            The method converts a CSV file into SDV format for the HealthGAN.
+        encode_test() : 
+            The method generates the SDV format based on a given encoding.
     """
     def __init__(self):
         pass
@@ -30,8 +37,6 @@ class Encoder():
         """
         Read in the file which can be CSV or Numpy
         """
-
-        # Read in the file
         data = None
         if file_name.endswith(".csv") and dtype is not None:
             data = pd.read_csv(file_name, dtype = dtype)
@@ -48,59 +53,64 @@ class Encoder():
 
     def __impute_column(self, df, c):
         """
-        Impute a column (c in this case) in dataframe using 
+        Impute a column (c) in dataframe using 
         LinearRegression if it is continuous or 
         KNeighborsClassifier is it is not
         """
 
-        # get x and y
+        # Get X and y
         y = df[c]
-        x = df.drop(c, axis=1)
+        X = df.drop(c, axis=1)
 
-        # remove columns with in the values to impute
-        x = x.loc[:, ~(x[y.isna()].isna().any())]
+        # Remove columns with in the values to impute
+        X = X.loc[:, ~(X[y.isna()].isna().any())]
 
-        # remove rows with na values in the training data
-        na_mask = ~(x.isna().any(axis=1))
+        # Remove rows with NA values
+        na_mask = ~(X.isna().any(axis=1))
         y = y[na_mask]
-        x = x[na_mask]
+        X = X[na_mask]
 
-        # one hot encode the data
-        x = one_hot_encode(x)
+        # One hot encode the data
+        X = one_hot_encode(X)
 
-        # get mask for data to impute
+        # Get mask for data to impute
         impute_mask = y.isna()
-        # if y is continuous then use linear regression
+
+        # If y is continuous then use linear regression
+        # else use KNeighborsClassifier
         if y.dtype.name == "float64":
             clf = LinearRegression()
         elif y.dtype.name == "object":
-            # Train KNN learner
             clf = KNeighborsClassifier(3, weights="distance")
-            # le = LabelEncoder()
-            # le.fit(df[col])
         else:
             raise ValueError
 
-        trained_model = clf.fit(x[~impute_mask], y[~impute_mask])
-        imputed_values = trained_model.predict(x[impute_mask])
+        trained_model = clf.fit(X[~impute_mask], y[~impute_mask])
+        imputed_values = trained_model.predict(X[impute_mask])
 
         return imputed_values
 
     def __fix_na_values(self, df, cols_ignored):
-        """run of imputing columns with missing values"""
+        """
+        Impute missing values in the columns
+        """
         df_core = df.drop(cols_ignored, axis=1)
 
         while df_core.isna().sum().sum():
-            # get column with least amount of missing values
+            # Get column with least amount of missing values
             cols_with_na = df_core.isna().sum()
             col = cols_with_na[cols_with_na > 0].idxmin()
-            # impute that column
+            # Impute that column
             df_core.loc[df_core[col].isna(), col] = self.__impute_column(df_core, col)
 
         return pd.concat([df_core, df[cols_ignored]], axis=1)
 
     def __truncated_beta(self, alpha, beta, low, high):
-        """truncated beta distribution with params alpha and beta, and limits low and high"""
+        """
+        Perform truncated beta distribution 
+        with params - alpha and beta
+        and limits - low and high
+        """
         nrm = stats.beta.cdf(high, alpha, beta) - stats.beta.cdf(low, alpha, beta)
 
         low_cdf = stats.beta.cdf(low, alpha, beta)
@@ -111,14 +121,16 @@ class Encoder():
             yield xr[0]
 
     def __binary(self, col, limits=None):
-        """convert a binary column to continuous"""
+        """
+        Convert a binary column to a continuous column
+        """
         if limits:
-            # reconstruct the distributions
+            # Construct the distributions
             distributions = {}
 
             zeros = min(limits.keys())
 
-            # case of all zeros and all ones
+            # Handling the case of all zeros or/and all ones
             if zeros == 1:
                 return col.apply(lambda x: 0), {1.0: 0}
             if zeros == 0:
@@ -131,8 +143,9 @@ class Encoder():
 
             distributions[1] = self.__truncated_beta(alpha, beta, zeros, 1)
 
-            # convert values that don't exist in orig col to most common
-            col = col.copy()  # to lose copy warnings
+            # Convert values that don't exist in original column
+            # to most common value
+            col = col.copy()
 
             return col.apply(lambda x: next(distributions[x])), None
 
@@ -140,12 +153,13 @@ class Encoder():
         alpha = zeros * 100
         beta = ((len(col) - (col == 0).sum()) / len(col)) * 100
 
-        # case of all zeros and all ones
+        # Handling the case of all zeros or/and all ones
         if zeros == 1:
             return col.apply(lambda x: 0), {1.0: 0}
         if zeros == 0:
             return col.apply(lambda x: 1), {1.0: 1}
-        # get distributions to pull from
+
+        # Get distributions to pull from
         distributions = {}
         limits = {}
 
@@ -155,20 +169,23 @@ class Encoder():
         distributions[1] = self.__truncated_beta(alpha, beta, zeros, 1)
         limits[1] = 1
 
-        # sample from the distributions and return that value
+        # Sample from the distributions and return that value
         return col.apply(lambda x: next(distributions[x])), limits
 
-
     def __numeric(self, col, min_max=None):
-        """normalize a numeric column"""
+        """
+        Normalize a numeric column
+        """
         if min_max:
             return ((col - min_max[0]) / (min_max[1] - min_max[0])), None, None
         return ((col - min(col)) / (max(col) - min(col))), min(col), max(col)
 
     def __categorical(self, col, limits=None):
-        """convert a categorical column to continuous"""
+        """
+        Convert a categorical column to continuous column
+        """
         if limits:
-            # reconstruct the distributions
+            # Construct the distributions
             distributions = {}
             a = 0
             for b, cat in limits.items():
@@ -179,29 +196,32 @@ class Encoder():
                 )
                 a = b
 
-            # convert values that don't exist in orig col to most common
-            col = col.copy()  # to lose copy warnings
+            # Convert values that don't exist in original column
+            # to most common value
+            col = col.copy()
             common = col.value_counts().index[0]
             for cat in col.unique():
                 if cat not in distributions:
                     col.loc[col == cat] = common
 
             return col.apply(lambda x: distributions[x].rvs()), None
-        # get categories, ensures sort by value and then name to tiebreak
+
+        # Get categories (ensures sort by value and then name to tie-break)
         series = col.value_counts(normalize=True)
         tmp = pd.DataFrame({"names": series.index, "pcts": series.values})
         tmp = tmp.sort_values(["pcts", "names"], ascending=[False, True])
         categories = pd.Series(tmp.pcts.values, tmp.names.values)
 
-        # get distributions to pull from
+        # Get distributions to pull from
         distributions = {}
         limits = {}
         a = 0
-        # for each category
+
+        # Iterate for each category
         for cat, val in categories.items():
-            # figure out the cutoff value
+            # Identify the cut off value
             b = a + val
-            # create the distribution to sample from
+            # Create the distribution to sample from
             mu, sigma = (a + b) / 2, (b - a) / 6
             distributions[cat] = stats.truncnorm(
                 (a - mu) / sigma, (b - mu) / sigma, mu, sigma
@@ -209,13 +229,15 @@ class Encoder():
             limits[b] = cat
             a = b
 
-        # sample from the distributions and return that value
+        # Sample from the distributions and return that value
         return col.apply(lambda x: distributions[x].rvs()), limits
 
     def __ordinal(self, col, limits=None):
-        """convert a ordinal column to continuous"""
+        """
+        Convert an ordinal column to a continuous column
+        """
         if limits:
-            # reconstruct the distributions
+            # Construct the distributions
             distributions = {}
             a = 0
             for b, cat in limits.items():
@@ -226,7 +248,8 @@ class Encoder():
                 )
                 a = b
 
-            # convert values that don't exist to nearest value
+            # Convert values that don't exist in original column
+            # to nearest value
             col = col.copy()
             max_val = max(distributions.keys())
             min_val = min(distributions.keys())
@@ -238,31 +261,35 @@ class Encoder():
                         col.loc[col == cat] = min_val
 
             return col.apply(lambda x: distributions[x].rvs()), None
-        # get categories, ensures sort by value and then name to tiebreak
+
+        # Get categories, ensures sort by value and then name to tiebreak
         categories = col.value_counts()
-        # find missing categories and fill with 0s
+
+        # Find missing categories and impute them with zeroes
         for i in range(categories.keys().min(), categories.keys().max() + 1):
             if i not in categories.keys():
                 categories[i] = 0
-        # sort by index to get in order
+
+        # Sort by index
         categories = categories.sort_index()
 
-        # additive smoothing for 0 counts
+        # Additive smoothing for 0 counts
         alpha = 1
         new_vals = (categories.values + alpha) / (len(col) + (alpha * len(categories)))
 
-        # create new categories
+        # Create new categories
         categories = pd.Series(new_vals, index=categories.index)
 
-        # get distributions to pull from
+        # Get distributions to pull from
         distributions = {}
         limits = {}
         a = 0
-        # for each category
+
+        # Iterate for each category
         for cat, val in categories.items():
-            # figure out the cutoff value
+            # Figure out the cutoff value
             b = a + val
-            # create the distribution to sample from
+            # Create the distribution to sample from
             mu, sigma = (a + b) / 2, (b - a) / 6
             distributions[cat] = stats.truncnorm(
                 (a - mu) / sigma, (b - mu) / sigma, mu, sigma
@@ -270,12 +297,14 @@ class Encoder():
             limits[b] = cat
             a = b
 
-        # sample from the distributions and return that value
+        # Sample from the distributions and return that value
         return col.apply(lambda x: distributions[x].rvs()), limits
 
     def __encode(self, df, limits=None, min_max=None, beta=False):
-        """encode the data into SDV format"""
-        # loop through every column
+        """
+        encode the data into SDV format
+        """
+        # Loop through every column
         if limits and min_max:
             already_exists = True
         else:
@@ -283,16 +312,16 @@ class Encoder():
             min_max = {}
             already_exists = False
         for c in df.columns:
-            # if object
+            # If column is "object"
             if df[c].dtype.char == "O":
                 if already_exists:
                     df[c], _ = self.__categorical(df[c], limits[c])
                 else:
                     df[c], lim = self.__categorical(df[c])
                     limits[c] = lim
-            # if int
+            # If column is "int"
             elif df[c].dtype.char == "l" or df[c].dtype.char == "q":
-                # if binary
+                # If column is "binary"
                 if set(df[c].unique()).issubset(set((0, 1))):
                     if already_exists:
                         if beta:
@@ -305,14 +334,14 @@ class Encoder():
                         else:
                             df[c], lim = self.__categorical(df[c])
                         limits[c] = lim
-                # else ordinal
+                # If column is "ordinal"
                 else:
                     if already_exists:
                         df[c], _ = self.__ordinal(df[c], limits[c])
                     else:
                         df[c], lim = self.__ordinal(df[c])
                         limits[c] = lim
-            # if boolean
+            # If column is "boolean"
             elif df[c].dtype.char == "?":
                 if already_exists:
                     if beta:
@@ -326,7 +355,7 @@ class Encoder():
                         df[c], lim = self.__categorical(df[c])
                     limits[c] = lim
 
-            # if decimal
+            # If column is "decimal"
             elif df[c].dtype.char == "d":
                 if already_exists:
                     df[c], _, _ = self.__numeric(df[c], min_max[c])
@@ -337,7 +366,9 @@ class Encoder():
         return df, limits, min_max
 
     def __save_files(self, df, prefix, limits=None, min_max=None, cols=False):
-        """save the sdv file and decoders"""
+        """
+        Save the sdv file and decoders
+        """
         df.to_csv(f"{prefix}_sdv.csv", index=False)
         if cols:
             json.dump(df.columns.tolist(), open(f"{prefix}.cols", "w"))
@@ -345,6 +376,28 @@ class Encoder():
             json.dump(limits, open(f"{prefix}.limits", "w"))
         if min_max:
             json.dump(min_max, open(f"{prefix}.min_max", "w"))
+
+    def __read_decoders(self, prefix, npy_file):
+        """
+        Read the decoder files
+        """
+        limits = json.load(open(f"{prefix}.limits"))
+        try:
+            min_max = json.load(open(f"{prefix}.min_max"))
+        except FileNotFoundError:
+            min_max = None
+        try:
+            cols = json.load(open(f"{prefix}.cols"))
+        except FileNotFoundError:
+            cols = None
+        if npy_file.endswith(".csv"):
+            npy = pd.read_csv(npy_file)
+        elif npy_file.endswith(".npy"):
+            npy = np.load(npy_file)
+        else:
+            npy = None
+
+        return limits, min_max, cols, npy
 
     def encode_train(self, 
                     data_file,
@@ -379,36 +432,16 @@ class Encoder():
             The min-max file with the name same as original file but with extension as "min_max".
         """
 
-        # open and read the data file
+        # Open and read the data file
         df_raw = self.__read_data(data_file, dtype)
 
         if fix_na_values:
-            # fix the NA values
+            # Fix the NA values
             df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
             assert df_raw.isna().sum().sum() == 0
 
         df_converted, lims, mm = self.__encode(df_raw, beta)
         self.__save_files(df_converted, data_file[:-4], lims, mm, True)
-
-    def __read_decoders(self, prefix, npy_file):
-        """read the decoder files"""
-        limits = json.load(open(f"{prefix}.limits"))
-        try:
-            min_max = json.load(open(f"{prefix}.min_max"))
-        except FileNotFoundError:
-            min_max = None
-        try:
-            cols = json.load(open(f"{prefix}.cols"))
-        except FileNotFoundError:
-            cols = None
-        if npy_file.endswith(".csv"):
-            npy = pd.read_csv(npy_file)
-        elif npy_file.endswith(".npy"):
-            npy = np.load(npy_file)
-        else:
-            npy = None
-
-        return limits, min_max, cols, npy
 
     def encode_test(self, 
                     data_file,
@@ -441,11 +474,11 @@ class Encoder():
             The converted sdv file of the original test file provided with original name appended with "_sdv".
         """
 
-        # open and read the data file
+        # Open and read the data file
         df_raw = self.__read_data(data_file, dtype)
 
         if fix_na_values:
-            # fix the NA values
+            # Fix the NA values
             df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
             assert df_raw.isna().sum().sum() == 0
 
@@ -466,12 +499,19 @@ class Decoder():
 
     The class provides functions to decode a data file and 
     produce the final synthetic data file.
+
+    Available methods
+    -----------------
+        decode() : 
+            The method generates a usable data file.
     """
     def __init__(self):
         pass
 
     def __read_decoders(self, prefix, npy_file):
-        """read the decoder files"""
+        """
+        Read the decoder files
+        """
         limits = json.load(open(f"{prefix}.limits"))
         try:
             min_max = json.load(open(f"{prefix}.min_max"))
@@ -491,7 +531,9 @@ class Decoder():
         return limits, min_max, cols, npy
 
     def __read_data(self, file_name, dtype=None):
-        """read in the file"""
+        """
+        Read in the file
+        """
         data = None
         if file_name.endswith(".csv") and dtype is not None:
             data = pd.read_csv(file_name, dtype = dtype)
@@ -500,17 +542,21 @@ class Decoder():
         elif file_name.endswith(".npy"):
             data = pd.DataFrame(np.load(file_name))
 
-        # check if file can be read
+        # Check if file can be read
         if data is None:
             raise ValueError
 
         return data
 
     def __undo_categorical(self, col, lim):
-        """convert a categorical column to continuous"""
+        """
+        Convert a categorical column to a continuous column
+        """
 
         def cat_decode(x, limits):
-            """decoder for categorical data"""
+            """
+            Decoder for categorical data
+            """
             for k, v in limits.items():
                 if x <= float(k):
                     return v
@@ -519,13 +565,17 @@ class Decoder():
 
 
     def __undo_numeric(self, col, min_col, max_col, discrete=None):
-        """normalize a numeric column"""
+        """
+        Normalize a numeric column
+        """
         if discrete:
             return (((max_col - min_col) * col) + min_col).round().astype("int")
         return ((max_col - min_col) * col) + min_col
 
     def __decode(self, df_new, df_orig_cols, limits, min_max):
-        """decode the data from SDV format"""
+        """
+        Decode the data from SDV format
+        """
         df_new = pd.DataFrame(df_new, columns=df_orig_cols)
         for c in df_new.columns:
             if c in limits:
@@ -535,11 +585,11 @@ class Decoder():
 
         return df_new
 
-    def decode_file(self, 
-                    data_file, 
-                    npy_file):
+    def decode(self,
+               data_file,
+               npy_file):
         """ 
-        The function decodes the file into sythentic usable data file. 
+        The function decodes the file into a usable data file. 
   
         Parameters
         ----------
@@ -556,10 +606,9 @@ class Decoder():
 
         lims, mm, cols, npy_new = self.__read_decoders(data_file[:-4], npy_file)
         if not cols:
-            # open and read the data file
+            # Open and read the data file
             df_raw = self.__read_data(data_file)
             cols = df_raw.columns
 
         df_converted = self.__decode(np.clip(npy_new, 0, 1), cols, lims, mm)
-        # save decoded
         df_converted.to_csv(data_file[:-4] + "_synthetic.csv", index=False)
