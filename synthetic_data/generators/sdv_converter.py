@@ -9,6 +9,7 @@ import numpy as np
 import numpy.random as rnd
 import pandas as pd
 from scipy import stats
+from progress.bar import IncrementalBar
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
 
@@ -22,13 +23,6 @@ class Encoder():
     - SDV file
     - Limits file
     - Min_max file
-
-    Available methods
-    -----------------
-        encode_train() : 
-            The method converts a CSV file into SDV format for the HealthGAN.
-        encode_test() : 
-            The method generates the SDV format based on a given encoding.
     """
     def __init__(self):
         pass
@@ -432,16 +426,26 @@ class Encoder():
             The min-max file with the name same as original file but with extension as "min_max".
         """
 
+        bar = IncrementalBar('Encoding', max=8)
         # Open and read the data file
+        bar.next()
         df_raw = self.__read_data(data_file, dtype)
+        bar.next()
+        bar.next()
+        bar.next()
 
         if fix_na_values:
             # Fix the NA values
             df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
             assert df_raw.isna().sum().sum() == 0
 
+        bar.next()
+        bar.next()
+        bar.next()
         df_converted, lims, mm = self.__encode(df_raw, beta)
+        bar.next()
         self.__save_files(df_converted, data_file[:-4], lims, mm, True)
+        bar.finish()
 
     def encode_test(self, 
                     data_file,
@@ -474,8 +478,13 @@ class Encoder():
             The converted sdv file of the original test file provided with original name appended with "_sdv".
         """
 
+        bar = IncrementalBar('Encoding', max=8)
         # Open and read the data file
+        bar.next()
         df_raw = self.__read_data(data_file, dtype)
+        bar.next()
+        bar.next()
+        bar.next()
 
         if fix_na_values:
             # Fix the NA values
@@ -487,10 +496,14 @@ class Encoder():
             if encoder_file.endswith(".csv")
             else encoder_file
         )
-
+        bar.next()
+        bar.next()
+        bar.next()
         lims, mms, _, _ = self.__read_decoders(enc_file, "")
         df_converted, _, _ = self.__encode(df_raw, lims, mms, beta)
+        bar.next()
         self.__save_files(df_converted, data_file[:-4])
+        bar.finish()
 
 
 class Decoder():
@@ -604,11 +617,22 @@ class Decoder():
             The decoded synthetic file with the original file name appended with "_synthetic".
         """
 
+        bar = IncrementalBar('Encoding', max=8)
+        
+        bar.next()
         lims, mm, cols, npy_new = self.__read_decoders(data_file[:-4], npy_file)
+        bar.next()
+        bar.next()
+        bar.next()
         if not cols:
             # Open and read the data file
             df_raw = self.__read_data(data_file)
             cols = df_raw.columns
 
+        bar.next()
+        bar.next()
+        bar.next()
         df_converted = self.__decode(np.clip(npy_new, 0, 1), cols, lims, mm)
+        bar.next()
         df_converted.to_csv(data_file[:-4] + "_synthetic.csv", index=False)
+        bar.finish()
