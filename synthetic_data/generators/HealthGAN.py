@@ -11,40 +11,6 @@ import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2, 3"
-
-def data_batcher(data, batch_size):
-    """
-    Create yield function for given data and batch size
-    """
-
-    def get_all_batches():
-        """
-        Yield function (generator) for all batches in data
-        """
-        # Shuffle in place
-        np.random.shuffle(data)
-
-        # Get total number of evenly divisible batches
-        # with shape: (num_batches, batch_size, n_features)
-        batches = data[:(data.shape[0] // batch_size) * batch_size]
-        batches = batches.reshape(-1, batch_size, data.shape[1])
-
-        # Iterate through all batches and yield them
-        for i, _ in enumerate(batches):
-            yield np.copy(batches[i])
-
-    def infinite_data_batcher():
-        """
-        Createa a generator that yields new batches every time it is called
-        """
-        while True:
-            for batch in get_all_batches():
-                yield batch
-
-    return infinite_data_batcher()
-
-
 class HealthGAN():
     """
     Wasserstein GAN with gradient penalties
@@ -94,9 +60,9 @@ class HealthGAN():
         # rounded down to the nearest multiple of 100
         self.params['batch_size'] = int(train_data.shape[0] / self.params['critic_iters']) // 100 * 100
 
-        self.train_batcher = __data_batcher(train_data, self.params['batch_size'])
+        self.train_batcher = self.__data_batcher(train_data, self.params['batch_size'])
 
-        __print_settings()
+        self.__print_settings()
 
         # Predefine values that will be set later
         self.real_data = None
@@ -113,7 +79,39 @@ class HealthGAN():
         self.time_all = []
 
         # Define the computation graph
-        __create_graph()
+        self.__create_graph()
+
+
+    def __data_batcher(self, data, batch_size):
+        """
+        Create yield function for given data and batch size
+        """
+
+        def get_all_batches():
+            """
+            Yield function (generator) for all batches in data
+            """
+            # Shuffle in place
+            np.random.shuffle(data)
+
+            # Get total number of evenly divisible batches
+            # with shape: (num_batches, batch_size, n_features)
+            batches = data[:(data.shape[0] // batch_size) * batch_size]
+            batches = batches.reshape(-1, batch_size, data.shape[1])
+
+            # Iterate through all batches and yield them
+            for i, _ in enumerate(batches):
+                yield np.copy(batches[i])
+
+        def infinite_data_batcher():
+            """
+            Createa a generator that yields new batches every time it is called
+            """
+            while True:
+                for batch in get_all_batches():
+                    yield batch
+
+        return infinite_data_batcher()
 
     def __print_settings(self):
         """
