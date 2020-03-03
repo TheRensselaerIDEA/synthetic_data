@@ -12,6 +12,15 @@ from sklearn.neighbors import NearestNeighbors
 class AdversarialAccuracy():
 	""" 
 	Calculates the adversarial accuracy between two data files
+
+    Parameters
+    ----------
+    file_1 : string, required
+        The first file to be considered for calculating accuracy.
+    file_2 : string, required
+        The second file to be considered for calculating accuracy.
+    workers: int, optional
+        The count of workers to use.
 	"""
 	def __init__(self, file_1, file_2, workers=15):
 		file_1_data = pd.read_csv(file_1)
