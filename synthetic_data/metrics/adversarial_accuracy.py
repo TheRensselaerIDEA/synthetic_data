@@ -35,18 +35,7 @@ class NearestNeighborMetrics():
         """
 
         p = psutil.Process()
-        p.cpu_affinity(list(range(33, 48)))
-
-        # Read in training, testing, and synthetic
-        train = 
-        test = 
-        synthetics = []
-        files = [
-            f for f in os.listdir('.') if f.startswith(prefix_synth)
-            and f.endswith('.csv') and 'synthetic' in f
-        ]
-        for f in files:
-            synthetics.append(np.clip(pd.read_csv(synthetic_file), 0, 1))
+        # p.cpu_affinity(list(range(33, 48)))
 
         self.data = {'tr': pd.read_csv(train_file), 
                      'te': pd.read_csv(test_file),
@@ -56,9 +45,7 @@ class NearestNeighborMetrics():
         # Pre allocate distances
         self.dists = {}
 
-        if f'{prefix_synth}_dists.pkl' not in os.listdir('.'):
-            # Run all the calculations
-            self.__compute_nn()
+        self.__compute_nn()
 
         # Run discrepancy score, divergence, adversarial accuracy
         discrepancy = self.__compute_discrepancy()

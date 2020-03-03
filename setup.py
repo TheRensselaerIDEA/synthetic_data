@@ -24,7 +24,9 @@ setuptools.setup(
     	"scipy",
     	"scikit-learn",
     	"tensorflow==1.13.1",
-        "progress"
+        "progress",
+        "psutil",
+        "tqdm"
     ],
     python_requires='>=3.6',
 )
