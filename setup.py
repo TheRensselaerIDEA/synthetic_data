@@ -23,7 +23,8 @@ setuptools.setup(
     	"pandas",
     	"scipy",
     	"scikit-learn",
-    	"tensorflow==1.13.1",
+    	"tensorflow==1.15",
+        "tensorflow-gpu==1.15"
         "progress",
         "psutil",
         "tqdm",
