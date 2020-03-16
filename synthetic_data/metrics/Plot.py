@@ -1,9 +1,15 @@
 import sys
+import numpy as np
 import pickle as pkl
 import pandas as pd
+import seaborn as sns
+import scipy.stats as stats
+from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
-import seaborn as sns
+from sklearn.decomposition import PCA as PCA
+from sklearn.manifold import TSNE
+from sklearn.externals import joblib
 
 class LossPlot():
     """ 
@@ -51,3 +57,249 @@ class LossPlot():
             print("Plots generated! Refer to the files 'test_loss.pdf', 'disc_loss.pdf' and 'gen_loss.pdf'")
         except:
             print("Could not produce plots")
+
+
+class ComponentPlots():
+    """ 
+    Uses `matplotlib` and `seaborn` to plot PCA and TSNE plot
+    for real and synthetic data files.
+    """
+
+    def pca_plot(self,
+                 real_data,
+                 synthetic_data=None, 
+                 title="Two Component PCA"):
+        """ 
+        The function plots PCA between two components for 
+        real and synthetic data.
+
+        Parameters
+        ----------
+        real_data : str, required
+            The file which contains the real data.
+        synthetic_data : str, optional
+            The file which contains the synthetic data.
+        title: str, optional
+            The title of the plot
+          
+        Outputs
+        -------
+        PCA Plot:
+            Plots the PCA components for the two datasets and 
+            save file with the given name followed by '_real_syn'.
+        """
+
+        real_data = pd.read_csv(real_data)
+        if synthetic_data is not None:
+            synthetic_data = pd.read_csv(synthetic_data)
+
+        plt.style.use('seaborn-muted')
+        pylab.rcParams['figure.figsize'] = 8, 8
+        np.random.seed(1234)
+        flatui = ["#34495e", "#e74c3c"]
+        sns.set_palette(flatui)
+
+        pca_orig = PCA(2)
+        pca_orig_data = pca_orig.fit_transform(real_data)
+        plt.scatter(*pca_orig_data.T, alpha=.3)
+
+        plt.title(title, fontsize=24)
+        plt.xlabel('First Component', fontsize=16)
+        plt.ylabel('Second Component', fontsize=16)
+
+        if synthetic_data is not None:
+            pca_synth_data = pca_orig.transform(synthetic_data)
+            plt.scatter(*pca_synth_data.T, alpha=.4)
+            plt.legend(labels=['Original Data', 'Synthetic Data'])
+        else:
+            plt.legend(labels=['Original Data'])
+
+        plt.savefig(f'{title}_real_syn.png')
+        print("Figure saved.")
+
+    def pca_pos_neg(self,
+                    real_data, 
+                    synthetic_data,
+                    title="Two Component PCA"):
+        """ 
+        The function plots PCA between two components for 
+        based on positive and negative values.
+
+        Parameters
+        ----------
+        real_data : str, required
+            The file which contains the real data.
+        synthetic_data : str, required
+            The file which contains the synthetic data.
+        title: str, optional
+            The title of the plot.
+          
+        Outputs
+        -------
+        PCA Plot:
+            Plots the PCA components for the two datasets and 
+            save file with the given name followed by '_pos_neg'.
+        """
+
+        real_data = pd.read_csv(real_data)
+        if synthetic_data is not None:
+            synthetic_data = pd.read_csv(synthetic_data)
+
+        plt.style.use('seaborn-muted')
+        pylab.rcParams['figure.figsize'] = 8, 8
+        np.random.seed(1234)
+        flatui = ["#34495e", "#e74c3c"]
+        sns.set_palette(flatui)
+
+        pca_orig = PCA(2)
+        pca_orig_data = pca_orig.fit_transform(real_data)
+
+        pos = pca_orig_data[synthetic_data.astype(bool).values.squeeze()]
+        neg = pca_orig_data[~(synthetic_data.astype(bool).values.squeeze())][:len(pos)]
+        plt.scatter(*pos.T, alpha=.3)
+        plt.scatter(*neg.T, alpha=.4)
+
+        plt.title(title, fontsize=24)
+        plt.xlabel('First Component', fontsize=16)
+        plt.ylabel('Second Component', fontsize=16)
+        plt.legend(labels=['Positive Data', 'Negative Data'])
+        plt.savefig(f'{title}_pos_neg.png')
+        print("Figure saved.")
+
+    def combined_pca(self,
+                     real_data, 
+                     synthetic_datas, 
+                     names):
+        """ 
+        The function plots PCA between two components between
+        real and synthetic datasets.
+
+        Parameters
+        ----------
+        real_data : str, required
+            The file which contains the real data.
+        synthetic_datas : list, required
+            The list of files that contain synthetic data (max 6).
+        names: list, required
+            The titles for each plot.
+          
+        Outputs
+        -------
+        PCA Plots:
+            Plots the PCA components across a set of plots for each
+            of the synthetic data files.
+        """
+
+        plt.style.use('seaborn-muted')
+        pylab.rcParams['figure.figsize'] = 8, 8
+        np.random.seed(1234)
+        flatui = ["#34495e", "#e74c3c"]
+        sns.set_palette(flatui)
+
+        real_data = pd.read_csv(real_data)
+        if synthetic_data is not None:
+            synthetic_data = pd.read_csv(synthetic_data)
+
+        fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
+            2, 3, sharey=True, sharex=True)
+
+        pca_orig = PCA(2)
+        pca_orig_data = pca_orig.fit_transform(real_data)
+
+        axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+
+        # plot orig data
+        for a in axes:
+            a.scatter(*pca_orig_data.T, alpha=.3)
+
+        pca_synth_data = []
+        for s in synthetic_datas:
+            pca_synth_data.append(pca_orig.transform(s))
+
+        for i, a in enumerate(axes):
+            if i < len(pca_synth_data):
+                a.scatter(*(pca_synth_data[i]).T, alpha=.4)
+
+            a.set_title(names[i], fontsize=16)
+
+        fig.add_subplot(111, frameon=False)
+
+        # Hide tick and tick label of the big axes
+        plt.tick_params(labelcolor='none', 
+                        top='off', 
+                        bottom='off', 
+                        left='off', 
+                        right='off')
+        plt.grid(False)
+        plt.xlabel("First Component", fontsize=18)
+        plt.ylabel("Second Component", fontsize=18)
+
+
+    def combined_tsne(self,
+                     real_data, 
+                     synthetic_datas, 
+                     names):
+
+        """ 
+        The function plots t-distributed Stochastic Neighbor Embedding 
+        between two components for real and synthetic datasets.
+
+        Parameters
+        ----------
+        real_data : str, required
+            The file which contains the real data.
+        synthetic_datas : list, required
+            The list of files that contain synthetic data (max 6).
+        names: list, required
+            The titles for each plot.
+          
+        Outputs
+        -------
+        PCA Plots:
+            Plots the PCA components across a set of plots for each
+            of the synthetic data files.
+        """
+
+        plt.style.use('seaborn-muted')
+        pylab.rcParams['figure.figsize'] = 8, 8
+        np.random.seed(1234)
+        flatui = ["#34495e", "#e74c3c"]
+        sns.set_palette(flatui)
+
+        real_data = pd.read_csv(real_data)
+        if synthetic_data is not None:
+            synthetic_data = pd.read_csv(synthetic_data)
+
+        fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
+            2, 3, sharey=True, sharex=True)
+
+        tsne_orig = TSNE(n_components=2)
+        tsne_orig_data = tsne_orig.fit_transform(real_data)
+
+        axes = [ax1, ax2, ax3, ax4, ax5, ax6]
+
+        # plot orig data
+        for a in axes:
+            a.scatter(*tsne_orig_data.T, alpha=.3)
+
+        tsne_synth_data = []
+        for s in synthetic_datas:
+            tsne_synth_data.append(tsne_orig.fit_transform(s))
+
+        for i, a in enumerate(axes):
+            if i < len(tsne_synth_data):
+                a.scatter(*(tsne_synth_data[i]).T, alpha=.4)
+
+            a.set_title(names[i], fontsize=16)
+
+        fig.add_subplot(111, frameon=False)
+
+        # Hide tick and tick label of the big axes
+        plt.tick_params(labelcolor='none', 
+                        top='off', 
+                        bottom='off', 
+                        left='off', 
+                        right='off')
+        plt.grid(False)
+        plt.xlabel("First Component", fontsize=18)
+        plt.ylabel("Second Component", fontsize=18)
