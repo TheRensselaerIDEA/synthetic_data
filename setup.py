@@ -26,7 +26,9 @@ setuptools.setup(
     	"tensorflow==1.13.1",
         "progress",
         "psutil",
-        "tqdm"
+        "tqdm",
+        "matplotlib",
+        "seaborn"
     ],
     python_requires='>=3.6',
 )
