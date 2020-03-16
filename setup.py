@@ -19,7 +19,7 @@ setuptools.setup(
         "Operating System :: OS Independent"
     ],
     install_requires=[
-    	"numpy",
+    	"numpy==1.17.0",
     	"pandas",
     	"scipy",
     	"scikit-learn",
