@@ -24,7 +24,7 @@ setuptools.setup(
     	"scipy",
     	"scikit-learn",
     	"tensorflow==1.15",
-        "tensorflow-gpu==1.15"
+        "tensorflow-gpu==1.15",
         "progress",
         "psutil",
         "tqdm",
