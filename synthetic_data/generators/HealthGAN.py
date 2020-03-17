@@ -38,7 +38,7 @@ class HealthGAN():
         # Set number of epochs
         if num_epochs:
             self.params['num_epochs'] = num_epochs
-            
+
         # Read the training data file
         train_data = pd.read_csv(train_file)
         self.col_names = train_data.columns
@@ -320,7 +320,7 @@ class HealthGAN():
                         samples = session.run(self.rand_noise_samples)
                         samples = pd.DataFrame(samples, columns=self.col_names)
                         samples.to_csv(
-                            f'data/samples_{epoch}_{self.params["critic_iters"]}_{self.params["base_nodes"]}_synthetic_{i}.csv',
+                            f'samples_{epoch}_{self.params["critic_iters"]}_{self.params["base_nodes"]}_synthetic_{i}.csv',
                             index=False)
 
                 # Update log after every 100 epochs
