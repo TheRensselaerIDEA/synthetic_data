@@ -26,7 +26,8 @@ class HealthGAN():
                  train_file,
                  test_file,
                  critic_iters=None,
-                 base_nodes=None):
+                 base_nodes=None,
+                 num_epochs=None):
 
         tf.reset_default_graph()
 
@@ -34,6 +35,10 @@ class HealthGAN():
         if critic_iters:
             self.params['critic_iters'] = critic_iters
 
+        # Set number of epochs
+        if num_epochs:
+            self.params['num_epochs'] = num_epochs
+            
         # Read the training data file
         train_data = pd.read_csv(train_file)
         self.col_names = train_data.columns
