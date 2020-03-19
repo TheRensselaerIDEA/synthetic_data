@@ -4,6 +4,7 @@ Compute accuracy
 import psutil
 import numpy as np
 import pandas as pd
+import pickle as pkl
 from tqdm import tqdm
 import concurrent.futures
 from itertools import product
@@ -73,6 +74,8 @@ class AdversarialAccuracy():
 				t, s, d = future.result()
 				self.distances[(t, s)] = d
 
+		pkl.dump(self.distances, open(f'gen_data/syn_dists.pkl', 'wb'))
+
 	def __adversarial_accuracy(self, t, s):
 		left = np.mean(self.distances[(t, s)] > self.distances[(t, t)])
 		right = np.mean(self.distances[(s, t)] > self.distances[(s, s)])
@@ -93,16 +96,25 @@ class AdversarialAccuracy():
 		avg_test_accuracy = np.mean(np.array(test_accuracy))
 		return avg_train_accuracy, avg_test_accuracy
 
-	def calculate_accuracy(self):
+	def calculate_accuracy(self, dist_file=None):
 		"""
 		Compute the standarad adversarial accuracy scores
 
+		Parameters
+		----------
+			dist_file : string, optional
+				The file that containts previously computed distances 
+				to omit recalculation.
 		Outputs
 		-------
 			The adversarial accuracy for the two data files.
 		"""
 
-		self.__compute_nn(self.workers)
+		if dist_file is not None:
+        	self.distances = pkl.load(open(dist_file, 'rb'))
+        else:
+			self.__compute_nn(self.workers)
+		
 		train_acc, test_acc = self.__calculate_accuracy()
 		print("Adversarial accuracy for train data is: {}".format(train_acc))
 		print("Adversarial accuracy for test data is: {}".format(test_acc))
