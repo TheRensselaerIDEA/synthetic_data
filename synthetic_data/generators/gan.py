@@ -11,8 +11,6 @@ import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 class HealthGAN():
 	"""
 	Health GAN with gradient penalties

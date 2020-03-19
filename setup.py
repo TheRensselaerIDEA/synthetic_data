@@ -4,11 +4,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="sythetic_data_kb22",
-    version="0.0.1",
+    name="sythetic_data",
+    version="0.9.0",
     author="Karan Bhanot",
     author_email="bhanotkaran22@gmail.com",
-    description="",
+    description="Package that enables generation of synthetic data",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/TheRensselaerIDEA/synthetic_data",
@@ -24,7 +24,6 @@ setuptools.setup(
     	"scipy",
     	"scikit-learn",
     	"tensorflow==1.13.1",
-        "tensorflow-gpu==1.13.1",
         "progress",
         "psutil",
         "tqdm",
