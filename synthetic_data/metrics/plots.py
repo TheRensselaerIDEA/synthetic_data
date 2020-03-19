@@ -73,6 +73,14 @@ class ComponentPlots():
 	for real and synthetic data files.
 	"""
 
+	def __init__(self):
+
+		if not os.path.exists('gen_data'):
+			os.makedirs('gen_data')
+
+		if not os.path.exists('gen_data/plots'):
+			os.makedirs('gen_data/plots')
+
 	def pca_plot(self,
 				 real_data,
 				 synthetic_data=None, 
@@ -119,60 +127,12 @@ class ComponentPlots():
 			pca_synth_data = pca_orig.transform(synthetic_data)
 			plt.scatter(*pca_synth_data.T, alpha=.4)
 			plt.legend(labels=['Original Data', 'Synthetic Data'])
+			plt.savefig(f'gen_data/plots/{title}_real_syn.png')
+			print(f"PCA Plot generated as {title}_real_syn.png inside gen_data/plots.")
 		else:
 			plt.legend(labels=['Original Data'])
-
-		plt.savefig(f'{title}_real_syn.png')
-		print("Figure saved.")
-
-	def pca_pos_neg(self,
-					real_data, 
-					synthetic_data,
-					title="Two Component PCA"):
-		""" 
-		The function plots PCA between two components for 
-		based on positive and negative values.
-
-		Parameters
-		----------
-		real_data : str, required
-			The file which contains the real data.
-		synthetic_data : str, required
-			The file which contains the synthetic data.
-		title: str, optional
-			The title of the plot.
-		  
-		Outputs
-		-------
-		PCA Plot:
-			Plots the PCA components for the two datasets and 
-			save file with the given name followed by '_pos_neg'.
-		"""
-
-		real_data = pd.read_csv(real_data)
-		if synthetic_data is not None:
-			synthetic_data = pd.read_csv(synthetic_data)
-
-		plt.style.use('seaborn-muted')
-		pylab.rcParams['figure.figsize'] = 8, 8
-		np.random.seed(1234)
-		flatui = ["#34495e", "#e74c3c"]
-		sns.set_palette(flatui)
-
-		pca_orig = PCA(2)
-		pca_orig_data = pca_orig.fit_transform(real_data)
-
-		pos = pca_orig_data[synthetic_data.astype(bool).values.squeeze()]
-		neg = pca_orig_data[~(synthetic_data.astype(bool).values.squeeze())][:len(pos)]
-		plt.scatter(*pos.T, alpha=.3)
-		plt.scatter(*neg.T, alpha=.4)
-
-		plt.title(title, fontsize=24)
-		plt.xlabel('First Component', fontsize=16)
-		plt.ylabel('Second Component', fontsize=16)
-		plt.legend(labels=['Positive Data', 'Negative Data'])
-		plt.savefig(f'{title}_pos_neg.png')
-		print("Figure saved.")
+			plt.savefig(f'gen_data/plots/{title}_real.png')
+			print(f"PCA Plot generated as {title}_real.png inside gen_data/plots.")
 
 	def combined_pca(self,
 					 real_data, 
@@ -180,7 +140,7 @@ class ComponentPlots():
 					 names):
 		""" 
 		The function plots PCA between two components between
-		real and synthetic datasets.
+		real data and several synthetic datasets.
 
 		Parameters
 		----------
@@ -205,8 +165,6 @@ class ComponentPlots():
 		sns.set_palette(flatui)
 
 		real_data = pd.read_csv(real_data)
-		if synthetic_data is not None:
-			synthetic_data = pd.read_csv(synthetic_data)
 
 		fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
 			2, 3, sharey=True, sharex=True)
@@ -222,6 +180,7 @@ class ComponentPlots():
 
 		pca_synth_data = []
 		for s in synthetic_datas:
+			s = pd.read_csv(s)
 			pca_synth_data.append(pca_orig.transform(s))
 
 		for i, a in enumerate(axes):
@@ -242,6 +201,9 @@ class ComponentPlots():
 		plt.xlabel("First Component", fontsize=18)
 		plt.ylabel("Second Component", fontsize=18)
 
+		plt.savefig(f'gen_data/plots/combined_pca.png')
+		print(f"PCA Plot generated as combined_pca.png inside gen_data/plots.")
+
 
 	def combined_tsne(self,
 					 real_data, 
@@ -250,7 +212,7 @@ class ComponentPlots():
 
 		""" 
 		The function plots t-distributed Stochastic Neighbor Embedding 
-		between two components for real and synthetic datasets.
+		between two components for real and several synthetic datasets.
 
 		Parameters
 		----------
@@ -275,8 +237,6 @@ class ComponentPlots():
 		sns.set_palette(flatui)
 
 		real_data = pd.read_csv(real_data)
-		if synthetic_data is not None:
-			synthetic_data = pd.read_csv(synthetic_data)
 
 		fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
 			2, 3, sharey=True, sharex=True)
@@ -292,6 +252,7 @@ class ComponentPlots():
 
 		tsne_synth_data = []
 		for s in synthetic_datas:
+			s = pd.read_csv(s)
 			tsne_synth_data.append(tsne_orig.fit_transform(s))
 
 		for i, a in enumerate(axes):
@@ -311,3 +272,6 @@ class ComponentPlots():
 		plt.grid(False)
 		plt.xlabel("First Component", fontsize=18)
 		plt.ylabel("Second Component", fontsize=18)
+
+		plt.savefig(f'gen_data/plots/combined_tsne.png')
+		print(f"PCA Plot generated as combined_tsne.png inside gen_data/plots.")
