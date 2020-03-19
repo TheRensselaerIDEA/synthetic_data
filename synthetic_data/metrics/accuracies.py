@@ -111,8 +111,8 @@ class AdversarialAccuracy():
 		"""
 
 		if dist_file is not None:
-        	self.distances = pkl.load(open(dist_file, 'rb'))
-        else:
+			self.distances = pkl.load(open(dist_file, 'rb'))
+		else:
 			self.__compute_nn(self.workers)
 		
 		train_acc, test_acc = self.__calculate_accuracy()
