@@ -46,7 +46,7 @@ Note that the package is developed on Tensorflow 1.13.1 and thus, it is recommen
 pip install tensorflow-gpu==1.13.1
 ```
 
-### Code to set visible devices
+### Set visible devices
 
 Place this code at the start of your Python script. Considering the visible CUDA devices are 2 and 3, the code shall be:
 ```
