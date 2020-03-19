@@ -33,10 +33,16 @@ class HealthGAN():
 				 test_file,
 				 base_nodes=None,
 				 critic_iters=None,
-				 num_epochs=None):
+				 num_epochs=None,
+				 use_gpu=False,
+				 visible_devices=[]
+				 ):
 
 		tf.reset_default_graph()
 
+		if use_gpu:
+			os.environ["CUDA_VISIBLE_DEVICES"] = []
+			
 		# set custom options
 		if critic_iters:
 			self.params['critic_iters'] = critic_iters
