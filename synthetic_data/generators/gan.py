@@ -11,6 +11,8 @@ import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 class HealthGAN():
 	"""
 	Health GAN with gradient penalties
@@ -33,15 +35,10 @@ class HealthGAN():
 				 test_file,
 				 base_nodes=None,
 				 critic_iters=None,
-				 num_epochs=None,
-				 use_gpu=False,
-				 visible_devices=[]
+				 num_epochs=None
 				 ):
 
 		tf.reset_default_graph()
-
-		if use_gpu:
-			os.environ["CUDA_VISIBLE_DEVICES"] = []
 			
 		# set custom options
 		if critic_iters:
