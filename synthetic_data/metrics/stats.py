@@ -3,65 +3,87 @@ import tensorflow as tf
 import numpy as np
 import pandas as pd
 
-sess = tf.Session()
+class Stats():
+	""" 
+	Calculates statistics for the model
 
+	Parameters
+	----------
+		meta_file : string, required
+			The meta file for the Tensorflow model.
+	"""
+	def __init__(self, meta_file):
 
-def restore_disc(meta):
-    """restor the discriminator object"""
-    saver = tf.train.import_meta_graph(meta)
+		sess = tf.Session()
+		self.d_op, self.d_inpt = __restore_disc(meta_file)
 
-    # restore values
-    prefix = meta[:meta.index('.meta')]
-    saver.restore(sess, prefix)
+	def __restore_disc(self, meta):
+	    """
+	    Restor the discriminator object
+	    """
 
-    # get graph
-    graph = tf.get_default_graph()
+	    saver = tf.train.import_meta_graph(meta)
 
-    # get disc ops
-    disc_op = graph.get_tensor_by_name('Discriminator.4/BiasAdd:0')
-    try:
-        data_inpt = graph.get_tensor_by_name('RealData:0')
-    except KeyError as ke:
-        data_inpt = graph.get_tensor_by_name('Placeholder:0')
+	    # Restore values
+	    prefix = meta[:meta.index('.meta')]
+	    saver.restore(sess, prefix)
 
-    return disc_op, data_inpt
+	    # Get graph
+	    graph = tf.get_default_graph()
 
+	    # Get disc ops
+	    disc_op = graph.get_tensor_by_name('Discriminator.4/BiasAdd:0')
+	    try:
+	        data_inpt = graph.get_tensor_by_name('RealData:0')
+	    except KeyError as ke:
+	        data_inpt = graph.get_tensor_by_name('Placeholder:0')
 
-def disc_test(data, disc_op, data_inpt, n=100):
-    """run the discriminator on a dataset for testing the loss"""
+	    return disc_op, data_inpt
 
-    def get_every_n(a, n=100):
-        for i in range(a.shape[0] // n):
-            yield a[n * i:n * (i + 1)]
+	def disc_test(self, data_file, batch_size=100):
+		"""
+		Runs the discriminator on a dataset for testing the loss
 
-    loss = np.array([])
+		Parameters
+		----------
+			data_file : string, required
+				The SDV file on which the discriminator will be tested.
+			batch_size: int, required
+				The batch size to be used with the default value 100.
+		Outputs
+		-------
+			The loss statistics.
+		"""
 
-    for batch in get_every_n(data, n=n):
-        loss = np.concatenate(
-            (loss, np.squeeze(sess.run(disc_op, feed_dict={data_inpt:
-                                                           batch}))))
+		data = pd.read_csv(data_file)
 
-    missing = data.shape[0] % n
-    # if not evenly divisible
-    if missing:
-        batch = np.zeros((n, data.shape[1]))
-        batch[:missing] = data[data.shape[0] - missing:]
-        loss = np.concatenate(
-            (loss,
-             np.squeeze(
-                 sess.run(disc_op, feed_dict={data_inpt: batch})[:missing])))
+		def get_every_n(a, n):
+		    for i in range(a.shape[0] // n):
+		        yield a[n * i:n * (i + 1)]
 
-    # verify
-    assert len(loss) == data.shape[0]
+		loss = np.array([])
 
-    return loss.mean(), loss.std(), loss.min(), loss.max(), np.abs(loss).min()
+		for batch in get_every_n(data, batch_size):
+		    loss = np.concatenate((loss, np.squeeze(
+		    		sess.run(self.disc_op, feed_dict={self.data_inpt:batch}))))
 
+		missing = data.shape[0] % n
 
-if len(sys.argv) != 3:
-    print('Usage: python disc_tester.py <meta_file> <data_file>')
-    sys.exit()
+		# If not evenly divisible
+		if missing:
+		    batch = np.zeros((n, data.shape[1]))
+		    batch[:missing] = data[data.shape[0] - missing:]
+		    loss = np.concatenate((loss, 
+		    					   np.squeeze(sess.run(self.disc_op, 
+		    					   					   feed_dict={self.data_inpt: batch})[:missing])))
 
-d_op, d_inpt = restore_disc(sys.argv[1])
+		# Verify
+		assert len(loss) == data.shape[0]
 
-data = train = pd.read_csv(sys.argv[2])
-print(disc_test(data, d_op, d_inpt))
+		# Print loss statistics
+		print("Discriminator test statistics: ")
+		print("Mean of loss: {}".format(loss.mean()))
+		print("Standard deviation of loss: {}".format(loss.std()))
+		print("Minimum value of loss: {}".format(loss.min()))
+		print("Maximum value of loss: {}".format(loss.max()))
+		print("Minimum value of absolute values of loss: {}".format(np.abs(loss).min()))
