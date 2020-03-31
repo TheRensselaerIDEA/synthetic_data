@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="sythetic_data",
+    name="synthetic_data",
     version="0.9.0",
     author="Karan Bhanot",
     author_email="bhanotkaran22@gmail.com",
