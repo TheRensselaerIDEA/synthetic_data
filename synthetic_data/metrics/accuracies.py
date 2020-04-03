@@ -118,3 +118,4 @@ class AdversarialAccuracy():
 		train_acc, test_acc = self.__calculate_accuracy()
 		print("Adversarial accuracy for train data is: {}".format(train_acc))
 		print("Adversarial accuracy for test data is: {}".format(test_acc))
+		print("Privacy Loss is: {}".format(test_acc - train_acc))
