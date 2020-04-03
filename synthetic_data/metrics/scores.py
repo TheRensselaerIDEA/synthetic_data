@@ -125,5 +125,5 @@ class Scores():
 		training = np.mean(np.array(d_tr_a))
 		testing = np.mean(np.array(d_te_a))
 
-		print("Divergence in training and synthetic data is: {}".format(d_tr_a))
-		print("Divergence in testing and synthetic data is: {}".format(d_te_a))
+		print("Divergence in training and synthetic data is: {}".format(training))
+		print("Divergence in testing and synthetic data is: {}".format(testing))
