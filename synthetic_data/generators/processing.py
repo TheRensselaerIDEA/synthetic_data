@@ -9,7 +9,7 @@ import numpy as np
 import numpy.random as rnd
 import pandas as pd
 from scipy import stats
-from progress.bar import IncrementalBar
+from tqdm import tqdm
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LinearRegression
 
@@ -314,7 +314,8 @@ class Encoder():
 			limits = {}
 			min_max = {}
 			already_exists = False
-		for c in df.columns:
+
+		for c in tqdm(df.columns):
 			# If column is "object"
 			if df[c].dtype.char == "O":
 				if already_exists:
@@ -433,27 +434,16 @@ class Encoder():
 			The min-max file with the name same as original file but with extension as "min_max".
 		"""
 
-		bar = IncrementalBar('Encoding', max=7)
-
 		# Open and read the data file
-		bar.next()
 		df_raw = self.__read_data(data_file, dtype)
-		bar.next()
 
-		bar.next()
 		if fix_na_values:
 			# Fix the NA values
 			df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
 			assert df_raw.isna().sum().sum() == 0
-		bar.next()
 
-		bar.next()
 		df_converted, lims, mm = self.__encode(df_raw, beta)
-		bar.next()
-
-		bar.next()
 		self.__save_files(df_converted, data_file[:-4], lims, mm, True)
-		bar.finish()
 
 	def encode_test(self, 
 					data_file,
@@ -486,28 +476,18 @@ class Encoder():
 			The converted sdv file of the original test file provided with original name appended with "_sdv".
 		"""
 
-		bar = IncrementalBar('Encoding', max=7)
-
 		# Open and read the data file
-		bar.next()
 		df_raw = self.__read_data(data_file, dtype)
-		bar.next()
 
-		bar.next()
 		if fix_na_values:
 			# Fix the NA values
 			df_raw = self.__fix_na_values(df_raw, na_col_to_ignore)
 			assert df_raw.isna().sum().sum() == 0
-		bar.next()
 
-		bar.next()
 		lims, mms, _ = self.__read_decoders(encoder_file[:-4])
 		df_converted, _, _ = self.__encode(df_raw, lims, mms, beta)
-		bar.next()
 
-		bar.next()
 		self.__save_files(df_converted, data_file[:-4])
-		bar.finish()
 
 
 class Decoder():
@@ -596,7 +576,7 @@ class Decoder():
 		"""
 
 		df_new = pd.DataFrame(df_new, columns=df_orig_cols)
-		for c in df_new.columns:
+		for c in tqdm(df_new.columns):
 			if c in limits:
 				df_new[c] = self.__undo_categorical(df_new[c], limits[c])
 			else:
@@ -623,24 +603,14 @@ class Decoder():
 		Sythetic data file:
 			The decoded synthetic file with the original file name appended with "_synthetic".
 		"""
-
-		bar = IncrementalBar('Decoding', max=7)
 		
-		bar.next()
 		lims, mm, cols, syn_data = self.__read_decoders(org_file[:-4], syn_file)
-		bar.next()
 
-		bar.next()
 		if not cols:
 			# Open and read the data file
 			df_raw = self.__read_data(org_file, dtype)
 			cols = df_raw.columns
-		bar.next()
-		
-		bar.next()
-		df_converted = self.__decode(np.clip(syn_data, 0, 1), cols, lims, mm)
-		bar.next()
 
-		bar.next()
+		df_converted = self.__decode(np.clip(syn_data, 0, 1), cols, lims, mm)
+
 		df_converted.to_csv(org_file[:-4] + "_synthetic.csv", index=False)
-		bar.finish()

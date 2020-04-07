@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="synthetic_data",
-    version="0.9.0",
+    version="0.9.1",
     author="Karan Bhanot",
     author_email="bhanotkaran22@gmail.com",
     description="Package that enables generation of synthetic data",
@@ -24,11 +24,10 @@ setuptools.setup(
     	"scipy",
     	"scikit-learn",
     	"tensorflow==1.13.1",
-        "progress",
         "psutil",
         "tqdm",
         "matplotlib",
         "seaborn"
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.6, <3.8',
 )
