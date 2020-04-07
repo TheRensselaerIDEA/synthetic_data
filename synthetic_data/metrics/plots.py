@@ -8,9 +8,11 @@ import scipy.stats as stats
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
+from sklearn.utils import shuffle
 from sklearn.decomposition import PCA as PCA
 from sklearn.manifold import TSNE
 from sklearn.externals import joblib
+from sklearn.neighbors import NearestNeighbors
 
 class LossPlot():
 	""" 
