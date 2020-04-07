@@ -613,4 +613,4 @@ class Decoder():
 
 		df_converted = self.__decode(np.clip(syn_data, 0, 1), cols, lims, mm)
 
-		df_converted.to_csv(org_file[:-4] + "_synthetic.csv", index=False)
+		df_converted.to_csv(org_file[:-4] + "_decoded.csv", index=False)
