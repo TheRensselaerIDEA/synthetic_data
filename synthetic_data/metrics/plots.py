@@ -70,10 +70,113 @@ class LossPlot():
 				plt.show()
 				plt.close()
 			if (savefig):
-				print("Plots saved! Refer to the files 'time.pdf', test_loss.pdf', 'disc_loss.pdf' and 'gen_loss.pdf' inside 'gen_data/plots' folder.")
+				print("Plots saved! Refer to the files 'time.png', test_loss.png', 'disc_loss.png' and 'gen_loss.png' inside 'gen_data/plots' folder.")
 		except:
 			print("Could not produce plots")
 
+class AUCPlot():
+	""" 
+	Uses `matplotlib` and `seaborn` to plot the AUC curve
+
+	Parameters
+	----------
+	train_file : string, required
+		The training file to be used for generating the AUC Curve.
+	test_file : string, required
+		The testing file to be used for generating the AUC Curve.
+	synth_file : string, required
+		The synthetic data file to be used for generating the AUC Curve.
+	name : string, required
+		A name for the plot.
+	"""
+	def __init__(self, train_file, test_file, synth_file, name):
+
+		if not os.path.exists('gen_data'):
+			os.makedirs('gen_data')
+
+		if not os.path.exists('gen_data/plots'):
+			os.makedirs('gen_data/plots')
+
+		data, labels = self.__create_shuffled_data(train_file, test_file)
+		self.fpr, self.tpr, self.auc = self.__compute_auc(synth_file, data, labels)
+		self.name = name
+
+	def __create_shuffled_data(self, train_file, test_file)
+
+	    # Read in train and test
+	    train_set = pd.read_csv(train_file)
+	    test_set = pd.read_csv(test_file)
+
+	    # Create labels
+	    label_train = np.empty(train_set.shape[0], dtype=int)
+	    label_train.fill(-1)
+	    label_test = np.empty(test_set.shape[0], dtype=int)
+	    label_test.fill(1)
+
+	    # Combine
+	    labels = np.concatenate([label_train, label_test], axis=0)
+	    data = pd.concat([train_set, test_set], axis=0)
+	    data['labels'] = labels.tolist()
+
+	    # Randomize
+	    data = shuffle(data)
+	    data, labels = (data.drop('labels', axis=1), data['labels'])
+
+	    return data, labels
+
+	def __compute_auc(self, synth_file, data, labels):
+    
+	    synth_data = pd.read_csv(synth_file)
+	    
+	    syn_dists = self.__nearest_neighbors(data, synth_data)
+	    fpr, tpr, _ = metrics.roc_curve(labels, syn_dists)
+	    roc_auc = metrics.auc(fpr, tpr)
+
+	    return fpr, tpr, roc_auc
+
+	def __nearest_neighbors(self, t, s):
+	    """
+	    Find nearest neighbors d_ts and d_ss
+	    """
+
+	    # Fit to S
+	    nn_s = NearestNeighbors(1, n_jobs=-1).fit(s)
+	   
+	    # Find distances from t to s
+	    d = nn_s.kneighbors(t)[0]
+	    
+	    return d
+
+	def plot(self, savefig=False):
+		""" 
+		The function plots the AUC curve.
+		  
+		Parameters
+		----------
+		savefig: boolean, optional
+			If set to True, the plots generated will be saved to disk.
+
+		Outputs
+		-------
+		PCA Plot:
+			Plots the AUC curve and saves the file as 
+			`membership_inference_auc_{name}.png`
+		"""
+
+		pylab.rcParams['figure.figsize'] = 6, 6
+	    plt.title('Receiver Operating Characteristic', fontsize=24)
+	    plt.plot([0, 1], [0, 1], 'r--')
+	    plt.plot(self.fpr, self.tpr, label=self.name)
+
+	    plt.xlim([-0.05, 1.05])
+	    plt.ylim([-0.05, 1.05])
+	    plt.ylabel('True Positive Rate', fontsize=18)
+	    plt.xlabel('False Positive Rate', fontsize=18)
+	    if (savefig):
+	    	plt.savefig(f'gen_data/membership_inference_auc_{self.name}.png')
+	    plt.show()
+	    if (savefig):
+	    	print(f"The plot has been saved as membership_inference_auc_{self.name}.png inside gen_data/plots.")
 
 class ComponentPlots():
 	""" 
