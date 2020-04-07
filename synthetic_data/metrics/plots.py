@@ -76,18 +76,18 @@ class LossPlot():
 		except:
 			print("Could not produce plots")
 
-class AUCPlot():
+class MemInfPlot():
 	""" 
-	Uses `matplotlib` and `seaborn` to plot the AUC curve
+	Uses `matplotlib` and `seaborn` to plot the membership inference plot
 
 	Parameters
 	----------
 	train_file : string, required
-		The training file to be used for generating the AUC Curve.
+		The training file to be used for generating the membership inference plot.
 	test_file : string, required
-		The testing file to be used for generating the AUC Curve.
+		The testing file to be used for generating the membership inference plot.
 	synth_file : string, required
-		The synthetic data file to be used for generating the AUC Curve.
+		The synthetic data file to be used for generating the membership inference plot.
 	name : string, required
 		A name for the plot.
 	"""
@@ -102,6 +102,8 @@ class AUCPlot():
 		data, labels = self.__create_shuffled_data(train_file, test_file)
 		self.fpr, self.tpr, self.auc = self.__compute_auc(synth_file, data, labels)
 		self.name = name
+
+		print("AUC = {}".format(self.auc))
 
 	def __create_shuffled_data(self, train_file, test_file)
 
@@ -151,7 +153,7 @@ class AUCPlot():
 
 	def plot(self, savefig=False):
 		""" 
-		The function plots the AUC curve.
+		The function plots the membership inference plot.
 		  
 		Parameters
 		----------
@@ -168,7 +170,7 @@ class AUCPlot():
 		pylab.rcParams['figure.figsize'] = 6, 6
 	    plt.title('Receiver Operating Characteristic', fontsize=24)
 	    plt.plot([0, 1], [0, 1], 'r--')
-	    plt.plot(self.fpr, self.tpr, label=self.name)
+	    plt.plot(self.fpr, self.tpr, label=f'{self.name} AUC = {self.auc:0.2f}')
 
 	    plt.xlim([-0.05, 1.05])
 	    plt.ylim([-0.05, 1.05])
