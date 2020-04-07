@@ -4,6 +4,7 @@ Compute accuracy
 import psutil
 import numpy as np
 import pandas as pd
+import pickle as pkl
 from tqdm import tqdm
 import concurrent.futures
 from itertools import product
@@ -21,23 +22,38 @@ class Scores():
 		The test file to be used.
 	synthetic_file: list, required
 		The list of various synthetic data files to be used.
+	dist_file: string, optional
+		The file that containts previously computed distances to omit recalculation.
 	workers: int, optional
 		The count of workers to use.
 	"""
-	def __init__(self, train_file, test_file, synthetic_files, workers=15):
+	def __init__(self, train_file, test_file, synthetic_files, dist_file=None, workers=None):
+		"""
+		Collect all training, testing and synthetic data files for processing
+		"""
+
 		training_data = pd.read_csv(train_file)
+		training_data = training_data.fillna(training_data.mean())
+
 		testing_data = pd.read_csv(test_file)
+		testing_data = testing_data.fillna(testing_data.mean())
 
-		self.data = {"training_data": training_data, 
-					 "testing_data": testing_data}
+		self.data = {
+						"training_data": training_data, 
+					 	"testing_data": testing_dat
+				 	}
 
+		self.synth_keys = []
 		for i, s in enumerate(synthetic_files):
 			self.data[f'synth_{i}'] = s
-		self.synth_keys = [f'synth_{i}' for i in range(len(synthetic_files))]
+			self.synth_keys.append(f'synth_{i}')
 
 		self.distances = {}
 
-		self.__compute_nn(workers)
+		if dist_file is not None:
+			self.distances = pkl.load(open(dist_file, 'rb'))
+		else:
+			self.__compute_nn(workers)
 
 	def __nearest_neighbors(self, t, s):
 		# Fit to S
@@ -64,6 +80,8 @@ class Scores():
 							   total=len(futures)):
 				t, s, d = future.result()
 				self.distances[(t, s)] = d
+
+		pkl.dump(self.distances, open(f'gen_data/syn_dists.pkl', 'wb'))
 
 	def __discrepancy_score(self, t, s):
 		left = np.mean(self.dists[(t, s)])
@@ -127,3 +145,38 @@ class Scores():
 
 		print("Divergence in training and synthetic data is: {}".format(training))
 		print("Divergence in testing and synthetic data is: {}".format(testing))
+
+
+	def __adversarial_accuracy(self, t, s):
+		left = np.mean(self.distances[(t, s)] > self.distances[(t, t)])
+		right = np.mean(self.distances[(s, t)] > self.distances[(s, s)])
+		return 0.5 * (left + right)
+
+	def __calculate_accuracy(self):
+		"""
+		Compute the standarad adversarial accuracy scores
+		"""
+
+		train_accuracy = []
+		test_accuracy = []
+		for key in self.synth_keys:
+			train_accuracy.append(self.__adversarial_accuracy('train', key))
+			test_accuracy.append(self.__adversarial_accuracy('test', key))
+
+		avg_train_accuracy = np.mean(np.array(train_accuracy))
+		avg_test_accuracy = np.mean(np.array(test_accuracy))
+		return avg_train_accuracy, avg_test_accuracy
+
+	def calculate_accuracy(self):
+		"""
+		Compute the standarad adversarial accuracy scores
+
+		Outputs
+		-------
+		The adversarial accuracy for the two data files along with privacy loss.
+		"""
+		
+		train_acc, test_acc = self.__calculate_accuracy()
+		print("Adversarial accuracy for train data is: {}".format(train_acc))
+		print("Adversarial accuracy for test data is: {}".format(test_acc))
+		print("Privacy Loss is: {}".format(test_acc - train_acc))
