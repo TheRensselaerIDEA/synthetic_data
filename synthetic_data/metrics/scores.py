@@ -25,9 +25,9 @@ class Scores():
 	dist_file: string, optional
 		The file that containts previously computed distances to omit recalculation.
 	workers: int, optional
-		The count of workers to use.
+		The count of workers to use with the default value of 1.
 	"""
-	def __init__(self, train_file, test_file, synthetic_files, dist_file=None, workers=None):
+	def __init__(self, train_file, test_file, synthetic_files, dist_file=None, workers=1):
 		"""
 		Collect all training, testing and synthetic data files for processing
 		"""
@@ -40,12 +40,12 @@ class Scores():
 
 		self.data = {
 						"training_data": training_data, 
-					 	"testing_data": testing_dat
+					 	"testing_data": testing_data
 				 	}
 
 		self.synth_keys = []
 		for i, s in enumerate(synthetic_files):
-			self.data[f'synth_{i}'] = s
+			self.data[f'synth_{i}'] = np.clip(pd.read_csv(s), 0, 1)
 			self.synth_keys.append(f'synth_{i}')
 
 		self.distances = {}
