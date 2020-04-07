@@ -37,9 +37,14 @@ class LossPlot():
 		except:
 			print("Please provide a correct pickle log file")
 
-	def save_plot(self):
+	def plot(self, savefig=False):
 		"""
 		Plot the loss graph.
+
+		Parameters
+		----------
+		savefig: boolean, optional
+			If set to True, the plots generated will be saved to disk.
 
 		Outputs
 		-------
@@ -47,12 +52,12 @@ class LossPlot():
 		"""
 		losses = ['test_loss', 'gen_loss', 'disc_loss', 'time']
 		titles = ['Test Loss', 'Generator Loss', 'Discriminator Loss', 'Time per Epoch']
-		labels = ['Epochs (in thousands)', 'Epochs', 'Epochs', 'Epochs']
 
-		pylab.rcParams['figure.figsize'] = 8, 8
+		pylab.rcParams['figure.figsize'] = 6, 6
 
 		try:
 			for i, loss in enumerate(losses):
+				j = i%2
 				if isinstance(self.log[loss][0], list):
 					new_df = pd.DataFrame({titles[i]: [v[-1] for v in self.log[loss]]})
 				else:
@@ -60,9 +65,12 @@ class LossPlot():
 				sns.lineplot(data=new_df, dashes=False, palette="hls")
 				plt.title(titles[i])
 				plt.xlabel('Epochs (in thousands)')
-				plt.savefig('gen_data/plots/' + loss + '.pdf')
+				if (savefig):
+					plt.savefig('gen_data/plots/' + loss + '.png')
+				plt.show()
 				plt.close()
-			print("Plots generated! Refer to the files 'time.pdf', test_loss.pdf', 'disc_loss.pdf' and 'gen_loss.pdf' inside 'gen_data/plots' folder.")
+			if (savefig):
+				print("Plots saved! Refer to the files 'time.pdf', test_loss.pdf', 'disc_loss.pdf' and 'gen_loss.pdf' inside 'gen_data/plots' folder.")
 		except:
 			print("Could not produce plots")
 
@@ -84,7 +92,8 @@ class ComponentPlots():
 	def pca_plot(self,
 				 real_data,
 				 synthetic_data=None, 
-				 title="Two Component PCA"):
+				 title="Two Component PCA",
+				 savefig=False):
 		""" 
 		The function plots PCA between two components for 
 		real and synthetic data.
@@ -96,7 +105,9 @@ class ComponentPlots():
 		synthetic_data : str, optional
 			The file which contains the synthetic data.
 		title: str, optional
-			The title of the plot
+			The title of the plot.
+		savefig: boolean, optional
+			If set to True, the plots generated will be saved to disk.
 		  
 		Outputs
 		-------
@@ -127,17 +138,24 @@ class ComponentPlots():
 			pca_synth_data = pca_orig.transform(synthetic_data)
 			plt.scatter(*pca_synth_data.T, alpha=.4)
 			plt.legend(labels=['Original Data', 'Synthetic Data'])
-			plt.savefig(f'gen_data/plots/{title}_real_syn.png')
-			print(f"PCA Plot generated as {title}_real_syn.png inside gen_data/plots.")
+			if (savefig):
+				plt.savefig(f'gen_data/plots/{title}_real_syn.png')
+			plt.show()
+			if (savefig):
+				print(f"PCA Plot generated as {title}_real_syn.png inside gen_data/plots.")
 		else:
 			plt.legend(labels=['Original Data'])
-			plt.savefig(f'gen_data/plots/{title}_real.png')
-			print(f"PCA Plot generated as {title}_real.png inside gen_data/plots.")
+			if (savefig):
+				plt.savefig(f'gen_data/plots/{title}_real.png')
+			plt.show()
+			if (savefig):
+				print(f"PCA Plot generated as {title}_real.png inside gen_data/plots.")
 
 	def combined_pca(self,
 					 real_data, 
 					 synthetic_datas, 
-					 names):
+					 names,
+					 savefig=False):
 		""" 
 		The function plots PCA between two components between
 		real data and several synthetic datasets.
@@ -150,6 +168,8 @@ class ComponentPlots():
 			The list of files that contain synthetic data (max 6).
 		names: list, required
 			The titles for each plot.
+		savefig: boolean, optional
+			If set to True, the plots generated will be saved to disk.
 		  
 		Outputs
 		-------
@@ -201,14 +221,17 @@ class ComponentPlots():
 		plt.xlabel("First Component", fontsize=18)
 		plt.ylabel("Second Component", fontsize=18)
 
-		plt.savefig(f'gen_data/plots/combined_pca.png')
-		print(f"PCA Plot generated as combined_pca.png inside gen_data/plots.")
-
+		if (savefig):
+			plt.savefig(f'gen_data/plots/combined_pca.png')
+		plt.show()
+		if (savefig):
+			print(f"PCA Plot generated as combined_pca.png inside gen_data/plots.")
 
 	def combined_tsne(self,
 					 real_data, 
 					 synthetic_datas, 
-					 names):
+					 names,
+					 savefig=False):
 
 		""" 
 		The function plots t-distributed Stochastic Neighbor Embedding 
@@ -222,7 +245,9 @@ class ComponentPlots():
 			The list of files that contain synthetic data (max 6).
 		names: list, required
 			The titles for each plot.
-		  
+		savefig: boolean, optional
+			If set to True, the plots generated will be saved to disk.
+
 		Outputs
 		-------
 		PCA Plots:
@@ -273,5 +298,8 @@ class ComponentPlots():
 		plt.xlabel("First Component", fontsize=18)
 		plt.ylabel("Second Component", fontsize=18)
 
-		plt.savefig(f'gen_data/plots/combined_tsne.png')
+		if (savefig):
+			plt.savefig(f'gen_data/plots/combined_tsne.png')
+		plt.show()
+		if (savefig):
 		print(f"PCA Plot generated as combined_tsne.png inside gen_data/plots.")
