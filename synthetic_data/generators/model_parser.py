@@ -71,98 +71,48 @@ class ModelParser():
 
         tf.io.write_graph(graph, 'gen_data' ouptut_file)
 
+    def generate_data(graph, columns_file, num_files=10):
+        """
+        This function allows generation of data using the Tensorflow graph
 
-def generate_data(plain_text_graph,
-                  columns_file,
-                  num_files=10):
-    """generate data using plain text graph"""
-    columns = json.load(open(columns_file))
-    f = open(plain_text_graph)
-    graph_def = tf.GraphDef()
+        Parameters
+        ----------
+        graph: string, required
+            The path including the file name of the graph
+        columns_file: string, required
+            The path including the file name which includes all the columns
+        num_files: int, optional
+            The count of files to be generated.
+        """
 
-    gd = text_format.Merge(f.read(), graph_def)
+        columns = json.load(open(columns_file))
+        f = open(graph)
+        graph_def = tf.GraphDef()
 
-    with tf.Graph().as_default() as graph:
-        tf.import_graph_def(gd)
+        gd = text_format.Merge(f.read(), graph_def)
 
-        inpt_name = [
-            o.name for o in graph.get_operations()
-            if o.name.endswith('RandomNoise')
-        ][0]
-        inpt = graph.get_tensor_by_name(inpt_name + ':0')
-        gen_name = [
-            o.name for o in graph.get_operations()
-            if o.name.endswith('Generator.3_1/Sigmoid')
-        ][0]
-        gen = graph.get_tensor_by_name(gen_name + ':0')
+        with tf.Graph().as_default() as graph:
+            tf.import_graph_def(gd)
 
-        size_files = gen.shape[0].value
+            inpt_name = [
+                o.name for o in graph.get_operations()
+                if o.name.endswith('RandomNoise')
+            ][0]
+            inpt = graph.get_tensor_by_name(inpt_name + ':0')
+            gen_name = [
+                o.name for o in graph.get_operations()
+                if o.name.endswith('Generator.3_1/Sigmoid')
+            ][0]
+            gen = graph.get_tensor_by_name(gen_name + ':0')
 
-        with tf.Session(graph=graph) as sess:
-            for i in range(num_files):
-                gen_data = sess.run(
-                    gen,
-                    feed_dict={inpt: np.random.normal(size=(size_files, 100))})
+            size_files = gen.shape[0].value
 
-                gen_data = pd.DataFrame(gen_data, columns=columns)
+            with tf.Session(graph=graph) as sess:
+                for i in range(num_files):
+                    gen_data = sess.run(
+                        gen,
+                        feed_dict={inpt: np.random.normal(size=(size_files, 100))})
 
-                gen_data.to_csv(f'txt_data_{i+1}.csv', index=False)
+                    gen_data = pd.DataFrame(gen_data, columns=columns)
 
-
-def parse_arguments(parser):
-    """parser for arguments and options"""
-    subparsers = parser.add_subparsers(dest='op')
-    parser_freeze = subparsers.add_parser('freeze')
-    parser_convert = subparsers.add_parser('convert')
-    parser_generate = subparsers.add_parser('generate')
-
-    parser_freeze.add_argument(
-        'graph',
-        type=str,
-        metavar='<graph_file>',
-        help='graph file ending in pbtxt')
-    parser_freeze.add_argument(
-        'ckpt',
-        type=str,
-        metavar='<ckpt_file>',
-        help='checkpoint file ending in ckpt')
-    # make optional
-    parser_freeze.add_argument(
-        'output',
-        type=str,
-        metavar='<output_file>',
-        help='output file ending in pb')
-    # add option for node
-
-    parser_convert.add_argument(
-        'frzn',
-        type=str,
-        metavar='<frzn_file>',
-        help='frozen file ending in pb')
-
-    parser_generate.add_argument(
-        'txt_graph',
-        type=str,
-        metavar='<txt_graph_file>',
-        help='text version of the graph ending in pbtxt')
-    parser_generate.add_argument(
-        'cols',
-        type=str,
-        metavar='<cols_file>',
-        help='columns file ending in cols')
-
-    return parser.parse_args()
-
-
-if __name__ == '__main__':
-    # read in arguments
-    args = parse_arguments(argparse.ArgumentParser())
-
-    if args.op == 'freeze':
-        freeze_graph(args.graph, args.ckpt, args.output)
-    elif args.op == 'convert':
-        convert_graph(args.frzn)
-    elif args.op == 'generate':
-        generate_data(args.txt_graph, args.cols)
-    else:
-        print('Need valid argument')
+                    gen_data.to_csv(f'gen_data/txt_data_{i+1}.csv', index=False)
