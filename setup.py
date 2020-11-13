@@ -23,7 +23,7 @@ setuptools.setup(
     	"pandas",
     	"scipy",
     	"scikit-learn",
-    	"tensorflow==1.13.1",
+    	"tensorflow==2.3.1",
         "psutil",
         "tqdm",
         "matplotlib",
