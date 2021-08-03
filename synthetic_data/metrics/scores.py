@@ -1,6 +1,7 @@
 """
 Compute accuracy
 """
+import os
 import psutil
 import numpy as np
 import pandas as pd
@@ -27,7 +28,7 @@ class Scores():
 	workers: int, optional
 		The count of workers to use with the default value of 1.
 	"""
-	def __init__(self, train_file, test_file, synthetic_files, dist_file=None, workers=1):
+	def __init__(self, train_file, test_file, synthetic_files, dist_file = None, workers = 1):
 		"""
 		Collect all training, testing and synthetic data files for processing
 		"""
@@ -80,12 +81,15 @@ class Scores():
 							   total=len(futures)):
 				t, s, d = future.result()
 				self.distances[(t, s)] = d
+		
+		if not os.path.isdir("gen_data"):
+			os.mkdir("gen_data")
 
 		pkl.dump(self.distances, open(f'gen_data/syn_dists.pkl', 'wb'))
 
 	def __discrepancy_score(self, t, s):
-		left = np.mean(self.dists[(t, s)])
-		right = np.mean(self.dists[(s, t)])
+		left = np.mean(self.distances[(t, s)])
+		right = np.mean(self.distances[(s, t)])
 		return 0.5 * (left + right)
 
 	def compute_discrepancy(self):
@@ -115,14 +119,14 @@ class Scores():
 		j_rat = np.mean(np.array(j_rat))
 		j_aa = np.mean(np.array(j_aa))
 
-		print("Discrepency in training and test data is: {}".format(j_rr))
-		print("Discrepency in training data and synthetic data is: {}".format(j_ra))
-		print("Discrepency in testing and synthetic data is: {}".format(j_rat))
-		print("Discrepency amongst various synthetic data files is: {}".format(j_aa))
+		print("Discrepency in training and test data is: {}".format(np.round(j_rr, 2)))
+		print("Discrepency in training data and synthetic data is: {}".format(np.round(j_ra, 2)))
+		print("Discrepency in testing and synthetic data is: {}".format(np.round(j_rat, 2)))
+		print("Discrepency amongst various synthetic data files is: {}".format(np.round(j_aa, 2)))
 
 	def __divergence(self, t, s):
-		left = np.mean(np.log(self.dists[(t, s)] / self.dists[(t, t)]))
-		right = np.mean(np.log(self.dists[(s, t)] / self.dists[(s, s)]))
+		left = np.mean(np.log(self.distances[(t, s)] / self.distances[(t, t)]))
+		right = np.mean(np.log(self.distances[(s, t)] / self.distances[(s, s)]))
 		return 0.5 * (left + right)
 
 	def compute_divergence(self):
@@ -143,8 +147,8 @@ class Scores():
 		training = np.mean(np.array(d_tr_a))
 		testing = np.mean(np.array(d_te_a))
 
-		print("Divergence in training and synthetic data is: {}".format(training))
-		print("Divergence in testing and synthetic data is: {}".format(testing))
+		print("Divergence in training and synthetic data is: {}".format(np.round(training, 2)))
+		print("Divergence in testing and synthetic data is: {}".format(np.round(testing, 2)))
 
 
 	def __adversarial_accuracy(self, t, s):
@@ -160,8 +164,8 @@ class Scores():
 		train_accuracy = []
 		test_accuracy = []
 		for key in self.synth_keys:
-			train_accuracy.append(self.__adversarial_accuracy('train', key))
-			test_accuracy.append(self.__adversarial_accuracy('test', key))
+			train_accuracy.append(self.__adversarial_accuracy('training_data', key))
+			test_accuracy.append(self.__adversarial_accuracy('testing_data', key))
 
 		avg_train_accuracy = np.mean(np.array(train_accuracy))
 		avg_test_accuracy = np.mean(np.array(test_accuracy))
@@ -177,6 +181,6 @@ class Scores():
 		"""
 		
 		train_acc, test_acc = self.__calculate_accuracy()
-		print("Adversarial accuracy for train data is: {}".format(train_acc))
-		print("Adversarial accuracy for test data is: {}".format(test_acc))
-		print("Privacy Loss is: {}".format(test_acc - train_acc))
+		print("Adversarial accuracy for train data is: {}".format(np.round(train_acc, 2)))
+		print("Adversarial accuracy for test data is: {}".format(np.round(test_acc, 2)))
+		print("Privacy Loss is: {}".format(np.round(np.round(test_acc, 2) - np.round(train_acc, 2), 2)))

@@ -23,9 +23,9 @@ class HealthGAN():
 
 	params = {
 		'base_nodes': 64,
-		'critic_iters': 5,  # number of discriminator iterations
-		'lambda': 10,  # paramter for gradient penalty
-		'num_epochs': 100000  # how long to train for
+		'critic_iters': 5, # number of discriminator iterations
+		'lambda': 10, # paramter for gradient penalty
+		'num_epochs': 100000 # how long to train for
 	}
 
 	def __init__(self,

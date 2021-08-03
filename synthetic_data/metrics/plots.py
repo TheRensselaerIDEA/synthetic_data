@@ -1,5 +1,6 @@
 import os
 import sys
+import joblib
 import numpy as np
 import pickle as pkl
 import pandas as pd
@@ -11,7 +12,7 @@ import matplotlib.pylab as pylab
 from sklearn.utils import shuffle
 from sklearn.decomposition import PCA as PCA
 from sklearn.manifold import TSNE
-from sklearn.externals import joblib
+
 from sklearn.neighbors import NearestNeighbors
 
 class LossPlot():
@@ -105,7 +106,7 @@ class MemInfPlot():
 
 		print("AUC = {}".format(self.auc))
 
-	def __create_shuffled_data(self, train_file, test_file)
+	def __create_shuffled_data(self, train_file, test_file):
 
 	    # Read in train and test
 	    train_set = pd.read_csv(train_file)
@@ -168,19 +169,20 @@ class MemInfPlot():
 		"""
 
 		pylab.rcParams['figure.figsize'] = 6, 6
-	    plt.title('Receiver Operating Characteristic', fontsize=24)
-	    plt.plot([0, 1], [0, 1], 'r--')
-	    plt.plot(self.fpr, self.tpr, label=f'{self.name} AUC = {self.auc:0.2f}')
+		plt.title('Receiver Operating Characteristic', fontsize = 24)
+		plt.plot([0, 1], [0, 1], 'r--')
+		plt.plot(self.fpr, self.tpr, label=f'{self.name} AUC = {self.auc:0.2f}')
 
-	    plt.xlim([-0.05, 1.05])
-	    plt.ylim([-0.05, 1.05])
-	    plt.ylabel('True Positive Rate', fontsize=18)
-	    plt.xlabel('False Positive Rate', fontsize=18)
-	    if (savefig):
-	    	plt.savefig(f'gen_data/membership_inference_auc_{self.name}.png')
-	    plt.show()
-	    if (savefig):
-	    	print(f"The plot has been saved as membership_inference_auc_{self.name}.png inside gen_data/plots.")
+		plt.xlim([-0.05, 1.05])
+		plt.ylim([-0.05, 1.05])
+		plt.ylabel('True Positive Rate', fontsize=18)
+		plt.xlabel('False Positive Rate', fontsize=18)
+
+		if (savefig):
+			plt.savefig(f'gen_data/membership_inference_auc_{self.name}.png')
+		plt.show()
+		if (savefig):
+			print(f"The plot has been saved as membership_inference_auc_{self.name}.png inside gen_data/plots.")
 
 class ComponentPlots():
 	""" 
@@ -409,4 +411,4 @@ class ComponentPlots():
 			plt.savefig(f'gen_data/plots/combined_tsne.png')
 		plt.show()
 		if (savefig):
-		print(f"PCA Plot generated as combined_tsne.png inside gen_data/plots.")
+			print(f"PCA Plot generated as combined_tsne.png inside gen_data/plots.")
